@@ -1,0 +1,46 @@
+name: ecanteen
+description: E-Canteen App with Firebase Backend
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase (Auth only - no Firestore or Storage)
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  google_sign_in: ^6.1.5
+
+  # HTTP Client for MongoDB backend
+  http: ^1.1.0
+
+  # State Management
+  provider: ^6.1.2
+
+  # UI & Utilities
+  intl: ^0.19.0
+  fl_chart: ^0.67.0          # Charts for analytics
+  image_picker: ^1.0.7       # For menu item images
+  cached_network_image: ^3.3.1
+  flutter_rating_bar: ^4.0.1 # Customer ratings
+  lottie: ^3.1.0              # Animations
+  shimmer: ^3.0.0             # Loading skeletons
+  uuid: ^4.3.3
+
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/animations/
