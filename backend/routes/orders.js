@@ -1,18 +1,20 @@
 const express = require('express');
-const admin = require('firebase-admin');
+const jwt = require('jsonwebtoken');
 const Order = require('../models/Order');
+const TimeSlot = require('../models/TimeSlot');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Middleware to verify Firebase token
-const verifyToken = async (req, res, next) => {
+// Middleware to verify JWT token
+const verifyJWT = (req, res, next) => {
   try {
-    const idToken = req.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) {
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) {
       return res.status(401).json({ error: 'No token provided' });
     }
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
@@ -20,12 +22,12 @@ const verifyToken = async (req, res, next) => {
 };
 
 // Create order
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyJWT, async (req, res) => {
   try {
-    const { items, totalAmount, deliveryAddress, phoneNumber, paymentMethod, specialInstructions } = req.body;
+    const { items, totalAmount, deliveryAddress, phoneNumber, paymentMethod, specialInstructions, restaurantId, timeSlotId, couponCode } = req.body;
     
-    console.log('📦 Creating order for customer:', req.user.uid);
-    console.log('Order data:', { totalAmount, deliveryAddress, itemCount: items?.length });
+    console.log('📦 Creating order for customer:', req.user.userId, 'at restaurant:', restaurantId);
+    console.log('Order data:', { totalAmount, deliveryAddress, itemCount: items?.length, timeSlotId });
     
     // Validate required fields
     if (!items || items.length === 0) {
@@ -35,18 +37,52 @@ router.post('/', verifyToken, async (req, res) => {
     if (!deliveryAddress || !phoneNumber || !totalAmount) {
       return res.status(400).json({ error: 'Missing required fields: deliveryAddress, phoneNumber, or totalAmount' });
     }
+
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'restaurantId is required' });
+    }
+
+    // If timeSlotId is provided, check if slot has availability
+    if (timeSlotId) {
+      const timeSlot = await TimeSlot.findById(timeSlotId);
+      
+      if (!timeSlot) {
+        return res.status(404).json({ error: 'Time slot not found' });
+      }
+
+      if (timeSlot.currentOrders >= timeSlot.capacity) {
+        return res.status(400).json({ error: 'Time slot is full. Please select another slot.' });
+      }
+
+      if (!timeSlot.isAvailable) {
+        return res.status(400).json({ error: 'This time slot is currently unavailable' });
+      }
+    }
     
     const order = await Order.create({
-      customerId: req.user.uid,
+      customerId: req.user.userId,
       customerName: req.user.email?.split('@')[0],
       customerPhone: phoneNumber,
       deliveryAddress,
+      restaurantId,
       items,
       totalAmount,
       paymentMethod,
       specialInstructions,
+      timeSlotId,
+      couponCode,
       status: 'Pending',
     });
+
+    // If timeSlotId is provided, increment currentOrders
+    if (timeSlotId) {
+      const timeSlot = await TimeSlot.findById(timeSlotId);
+      if (timeSlot) {
+        timeSlot.currentOrders += 1;
+        await timeSlot.save();
+        console.log(`📊 Updated time slot ${timeSlotId}: ${timeSlot.currentOrders}/${timeSlot.capacity} orders`);
+      }
+    }
     
     console.log('✅ Order created successfully:', order._id);
     res.status(201).json({ success: true, order });
@@ -57,10 +93,10 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Get user's orders (for customers to see their own orders)
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyJWT, async (req, res) => {
   try {
-    const orders = await Order.find({ customerId: req.user.uid }).sort({ orderDate: -1 });
-    console.log(`📋 Retrieved ${orders.length} orders for customer:`, req.user.uid);
+    const orders = await Order.find({ customerId: req.user.userId }).sort({ orderDate: -1 });
+    console.log(`📋 Retrieved ${orders.length} orders for customer:`, req.user.userId);
     res.json(orders);
   } catch (error) {
     console.error('❌ Error fetching customer orders:', error);
@@ -68,20 +104,26 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-// Get all orders (for restaurant dashboard to see all incoming orders)
-router.get('/all/orders', verifyToken, async (req, res) => {
+// Get all orders (for restaurant dashboard to see only their incoming orders)
+router.get('/all/orders', verifyJWT, async (req, res) => {
   try {
-    const orders = await Order.find({}).sort({ orderDate: -1 });
-    console.log(`📋 Retrieved ${orders.length} total orders for restaurant`);
+    // Only allow restaurants to see their own orders
+    if (req.user.role !== 'restaurant') {
+      return res.status(403).json({ error: 'Only restaurants can access this endpoint' });
+    }
+
+    // Get orders only for this restaurant using userId as restaurantId (matching how orders are created)
+    const orders = await Order.find({ restaurantId: req.user.userId }).sort({ orderDate: -1 });
+    console.log(`📋 Retrieved ${orders.length} orders for restaurant:`, req.user.userId);
     res.json(orders);
   } catch (error) {
-    console.error('❌ Error fetching all orders:', error);
+    console.error('❌ Error fetching restaurant orders:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Get order by ID
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyJWT, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) {
@@ -90,7 +132,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
     
     // Verify ownership
-    if (order.customerId !== req.user.uid) {
+    if (order.customerId !== req.user.userId) {
       console.warn(`⚠️ Unauthorized access attempt for order ${req.params.id}`);
       return res.status(403).json({ error: 'Unauthorized' });
     }
@@ -103,7 +145,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // Update order status (restaurant admin)
-router.patch('/:id/status', verifyToken, async (req, res) => {
+router.patch('/:id/status', verifyJWT, async (req, res) => {
   try {
     const { status } = req.body;
     console.log(`🔄 Updating order ${req.params.id} status to: ${status}`);
@@ -131,11 +173,11 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
 });
 
 // Cancel order
-router.patch('/:id/cancel', verifyToken, async (req, res) => {
+router.patch('/:id/cancel', verifyJWT, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     
-    if (order.customerId !== req.user.uid) {
+    if (order.customerId !== req.user.userId) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -150,7 +192,7 @@ router.patch('/:id/cancel', verifyToken, async (req, res) => {
 });
 
 // Delete order (restaurant admin only)
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyJWT, async (req, res) => {
   try {
     const orderId = req.params.id;
     console.log(`🗑️ Deleting order: ${orderId}`);

@@ -18,11 +18,9 @@ services:
     container_name: smartcanteen-backend
     environment:
       MONGODB_URI: mongodb://mongodb:27017/smartcanteen
+      JWT_SECRET: ${JWT_SECRET}
       PORT: 3000
       NODE_ENV: development
-      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
-      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
-      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
     ports:
       - "3000:3000"
     depends_on:

@@ -6,6 +6,7 @@ class AppUser {
   final String email;
   final UserRole role;
   final DateTime createdAt;
+  final String? restaurantId;
 
   AppUser({
     required this.uid,
@@ -13,6 +14,7 @@ class AppUser {
     required this.email,
     required this.role,
     required this.createdAt,
+    this.restaurantId,
   });
 
   bool get isRestaurant => role == UserRole.restaurant;
@@ -29,6 +31,7 @@ class AppUser {
       createdAt: data['createdAt'] != null
           ? DateTime.parse(data['createdAt'].toString())
           : DateTime.now(),
+      restaurantId: data['restaurantId'],
     );
   }
 
@@ -39,6 +42,7 @@ class AppUser {
       'email': email,
       'role': role == UserRole.restaurant ? 'restaurant' : 'customer',
       'createdAt': createdAt.toIso8601String(),
+      'restaurantId': restaurantId,
     };
   }
 }

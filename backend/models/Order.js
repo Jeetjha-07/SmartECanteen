@@ -6,6 +6,7 @@ const orderSchema = new mongoose.Schema(
     customerName: String,
     customerPhone: String,
     deliveryAddress: String,
+    restaurantId: { type: String, required: true }, // Link to Restaurant
     items: [
       {
         foodItemId: mongoose.Schema.Types.ObjectId,
@@ -16,6 +17,10 @@ const orderSchema = new mongoose.Schema(
       },
     ],
     totalAmount: { type: Number, required: true },
+    subtotal: Number, // Before discount
+    discountAmount: { type: Number, default: 0 },
+    couponCode: String, // Coupon applied
+    couponDiscount: { type: Number, default: 0 },
     paymentMethod: {
       type: String,
       enum: ['Card', 'UPI', 'NetBanking', 'Wallet', 'COD'],
@@ -32,6 +37,11 @@ const orderSchema = new mongoose.Schema(
       default: 'Pending',
     },
     specialInstructions: String,
+    requestedTimeSlot: {
+      date: Date,
+      startTime: String,
+      endTime: String,
+    },
     estimatedDeliveryTime: Date,
     deliveredAt: Date,
     orderDate: { type: Date, default: Date.now },

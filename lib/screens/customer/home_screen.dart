@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
 import '../../utils/app_colors.dart';
-import 'menu_screen.dart';
+import 'shop_listing_screen.dart';
 import 'cart_screen.dart';
 import 'order_history_screen.dart';
 import 'login_screen.dart';
@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = const [
-    MenuScreen(),
+    ShopListingScreen(), // Show restaurants/stores first
     CartScreen(),
     OrderHistoryScreen(),
   ];
@@ -107,8 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? AuthService.userName[0].toUpperCase()
                               : 'U',
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
+                              color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -121,8 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.black87)),
                           Text(AuthService.userEmail,
                               style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textGrey)),
+                                  fontSize: 12, color: AppColors.textGrey)),
                         ],
                       ),
                     ],
@@ -147,8 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const LoginScreen())),
               icon: const Icon(Icons.login, color: Colors.white),
-              label: const Text('Login',
-                  style: TextStyle(color: Colors.white)),
+              label: const Text('Login', style: TextStyle(color: Colors.white)),
             ),
         ],
       ),
@@ -165,9 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 8,
         items: [
           const BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            activeIcon: Icon(Icons.restaurant_menu),
-            label: 'Menu',
+            icon: Icon(Icons.storefront_outlined),
+            activeIcon: Icon(Icons.storefront),
+            label: 'Stores',
           ),
           BottomNavigationBarItem(
             icon: Stack(
@@ -185,8 +182,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Text(
                         '${cartService.itemCount}',
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 8),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 8),
                       ),
                     ),
                   ),

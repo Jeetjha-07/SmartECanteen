@@ -1,20 +1,63 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import '../models/food_item.dart';
 import 'api_service.dart';
 
-class MenuService {
-  // Get all available menu items (for customers)
-  static Future<List<FoodItem>> getMenuItems({String? category}) async {
+class MenuService extends ChangeNotifier {
+  List<FoodItem> items = [];
+  bool isLoading = false;
+  String? error;
+
+  final ApiService _apiService = ApiService();
+
+  // Get menu items for a specific restaurant
+  Future<void> getMenuItems({String? restaurantId, String? category}) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
     try {
-      final data = await ApiService.getMenuItems(category: category);
-      return data.map((item) => FoodItem.fromMap(item)).toList();
+      String url = '${ApiService.baseUrl}/menu';
+      
+      // Build query parameters
+      List<String> params = [];
+      if (restaurantId != null && restaurantId.isNotEmpty) {
+        params.add('restaurantId=$restaurantId');
+      }
+      if (category != null && category.isNotEmpty) {
+        params.add('category=$category');
+      }
+      
+      if (params.isNotEmpty) {
+        url += '?' + params.join('&');
+      }
+      
+      print('🔍 Fetching menu items from: $url');
+
+      final response = await _apiService.get(url);
+
+      if (response != null) {
+        final List<dynamic> data =
+            response is String ? jsonDecode(response) : response;
+        items = (data)
+            .map((item) => FoodItem.fromMap(item as Map<String, dynamic>))
+            .toList();
+        print('✅ Loaded ${items.length} menu items for restaurant: $restaurantId');
+      } else {
+        print('⚠️ No response from menu API');
+      }
     } catch (e) {
+      error = e.toString();
       print('Error fetching menu items: $e');
-      return [];
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 
   // Get ALL menu items including unavailable (for restaurant admin)
+  // Returns empty list if shop not registered, but doesn't store error
   static Future<List<FoodItem>> getAllMenuItems({String? category}) async {
     try {
       print('📋 Fetching ALL menu items (including unavailable)...');
@@ -22,8 +65,26 @@ class MenuService {
       print('✅ Got ${data.length} items (available + unavailable)');
       return data.map((item) => FoodItem.fromMap(item)).toList();
     } catch (e) {
-      print('❌ Error fetching all menu items: $e');
+      final errorStr = e.toString();
+      // Check if it's a shop registration error
+      if (errorStr.contains('Shop must be registered')) {
+        print('🔒 Menu is locked: Shop not registered');
+      } else {
+        print('❌ Error fetching all menu items: $e');
+      }
       return [];
+    }
+  }
+
+  // Check if menu is locked due to shop not being registered
+  static Future<bool> isMenuLocked() async {
+    try {
+      await ApiService.getAllMenuItems();
+      return false; // Menu is not locked if we can fetch items
+    } catch (e) {
+      final errorStr = e.toString();
+      // Menu is locked if we get the specific shop registration error
+      return errorStr.contains('Shop must be registered');
     }
   }
 
@@ -102,8 +163,10 @@ class MenuService {
       String itemId, bool isAvailable) async {
     try {
       print('🔄 Toggling availability for item $itemId to: $isAvailable');
-      final result = await ApiService.toggleMenuItemAvailability(itemId, isAvailable);
-      print('✅ Availability toggled: ${result['name']} is now ${isAvailable ? 'Available' : 'Out of Stock'}');
+      final result =
+          await ApiService.toggleMenuItemAvailability(itemId, isAvailable);
+      print(
+          '✅ Availability toggled: ${result['name']} is now ${isAvailable ? 'Available' : 'Out of Stock'}');
       return true;
     } catch (e) {
       print('❌ Error toggling availability: $e');

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/menu_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/food_item.dart';
 import '../../utils/app_colors.dart';
+import 'restaurant_shop_registration_screen.dart';
 
 class RestaurantMenuScreen extends StatefulWidget {
   const RestaurantMenuScreen({super.key});
@@ -20,6 +22,86 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
     super.initState();
     // Restaurant should see ALL items (available + unavailable)
     _menuFuture = MenuService.getAllMenuItems();
+    // Show dialog if shop is not registered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowShopRegistrationDialog();
+    });
+  }
+
+  // Check if shop is registered and show dialog if not
+  void _checkAndShowShopRegistrationDialog() async {
+    final isLocked = await MenuService.isMenuLocked();
+    if (isLocked && mounted) {
+      _showShopRegistrationDialog();
+    }
+  }
+
+  // Show dialog asking to register shop
+  void _showShopRegistrationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must take action
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryOrange.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.storefront,
+                color: AppColors.primaryOrange,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                'Register Your Shop',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'You need to register your shop before adding menu items.\n\nComplete the shop registration to unlock the menu.',
+          style: TextStyle(
+            color: AppColors.textGrey,
+            fontSize: 14,
+            height: 1.6,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to shop registration screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const RestaurantShopRegistrationScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add_business),
+            label: const Text('Register Shop'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryOrange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Refresh menu items from backend
@@ -116,25 +198,79 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
             Expanded(
               child: snapshot.connectionState == ConnectionState.waiting
                   ? const Center(child: CircularProgressIndicator())
-                  : filtered.isEmpty
-                      ? const Center(child: Text('No items in this category'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) => _MenuItemCard(
-                            item: filtered[index],
-                            onEdit: () =>
-                                _showAddEditDialog(context, filtered[index]),
-                            onDelete: () =>
-                                _deleteItem(context, filtered[index]),
-                            onToggle: (val) async {
-                              await MenuService.toggleAvailability(
-                                  filtered[index].id, val);
-                              // Refresh menu after toggle
-                              _refreshMenu();
-                            },
+                  : allItems.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(30),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppColors.primaryOrange.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.storefront_outlined,
+                                  color: AppColors.primaryOrange,
+                                  size: 64,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
+                                'Coming Soon!',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Your restaurant is all set.\nAdd menu items to start receiving orders!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.textGrey,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () =>
+                                    _showAddEditDialog(context, null),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add First Item'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primaryOrange,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                        )
+                      : filtered.isEmpty
+                          ? const Center(
+                              child: Text('No items in this category'),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) => _MenuItemCard(
+                                item: filtered[index],
+                                onEdit: () => _showAddEditDialog(
+                                    context, filtered[index]),
+                                onDelete: () =>
+                                    _deleteItem(context, filtered[index]),
+                                onToggle: (val) async {
+                                  await MenuService.toggleAvailability(
+                                      filtered[index].id, val);
+                                  // Refresh menu after toggle
+                                  _refreshMenu();
+                                },
+                              ),
+                            ),
             ),
           ],
         );
@@ -207,14 +343,13 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                   _buildField(catCtrl, 'Category', Icons.category),
                   const SizedBox(height: 12),
                   _buildField(imageCtrl, 'Image URL', Icons.image_outlined,
-                      required: false,
-                      onChanged: () => setDialogState(() {})),
+                      required: false, onChanged: () => setDialogState(() {})),
                   const SizedBox(height: 12),
                   // Image Preview
                   if (imageCtrl.text.trim().isNotEmpty)
                     Container(
                       width: double.infinity,
-                      height: 150,
+                      height: 100,
                       decoration: BoxDecoration(
                         border: Border.all(color: AppColors.textGrey, width: 1),
                         borderRadius: BorderRadius.circular(10),
@@ -237,7 +372,8 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: const [
-                                  Icon(Icons.broken_image, color: AppColors.errorRed),
+                                  Icon(Icons.broken_image,
+                                      color: AppColors.errorRed),
                                   SizedBox(height: 8),
                                   Text('Invalid Image URL',
                                       style: TextStyle(
@@ -272,12 +408,16 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                         price: double.tryParse(priceCtrl.text) ?? 0,
                         imageUrl: imageCtrl.text.trim(),
                         category: catCtrl.text.trim(),
+                        restaurantId:
+                            AuthService.currentUser?.restaurantId ?? '',
                       );
 
                       bool ok;
+                      String? errorMsg;
                       if (existing == null) {
                         final result = await MenuService.addMenuItem(item);
                         ok = result['success'] ?? false;
+                        errorMsg = result['error'];
                       } else {
                         ok = await MenuService.updateMenuItem(item);
                       }
@@ -289,7 +429,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                             ? existing == null
                                 ? 'Item added!'
                                 : 'Item updated!'
-                            : 'Operation failed'),
+                            : errorMsg ?? 'Operation failed'),
                         backgroundColor:
                             ok ? AppColors.successGreen : AppColors.errorRed,
                       ));
@@ -376,13 +516,13 @@ class _MenuItemCardState extends State<_MenuItemCard> {
 
   Future<void> _toggleAvailability(bool newValue) async {
     setState(() => _isToggling = true);
-    
+
     // Update UI immediately for better UX
     setState(() => _isAvailable = newValue);
-    
+
     // Call the parent callback
     widget.onToggle(newValue);
-    
+
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       setState(() => _isToggling = false);
@@ -403,18 +543,37 @@ class _MenuItemCardState extends State<_MenuItemCard> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(
-                    imageUrl: widget.item.imageUrl,
-                    width: 70,
-                    height: 70,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(
-                      width: 70,
-                      height: 70,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.restaurant, color: Colors.grey),
-                    ),
-                  ),
+                  child: widget.item.imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: widget.item.imageUrl,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            width: 70,
+                            height: 70,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.restaurant,
+                                color: Colors.grey),
+                          ),
+                          errorWidget: (_, __, ___) => Container(
+                            width: 70,
+                            height: 70,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.restaurant,
+                                color: Colors.grey),
+                          ),
+                        )
+                      : Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.restaurant,
+                              color: Colors.grey),
+                        ),
                 ),
                 if (!_isAvailable)
                   Positioned.fill(

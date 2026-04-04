@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/restaurant.dart';
+import '../../models/time_slot.dart';
 import '../../services/cart_service.dart';
+import '../../services/coupon_service.dart';
 import '../../services/order_service.dart';
+import '../../services/time_slot_service.dart';
 import '../../utils/app_colors.dart';
 import 'home_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  final Restaurant? restaurant;
+
+  const CheckoutScreen({super.key, this.restaurant});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -16,29 +22,61 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _couponController = TextEditingController();
   String _paymentMethod = 'COD';
   bool _isProcessing = false;
+  TimeSlot? _selectedTimeSlot;
+  String? _appliedCouponCode;
+  double _discountAmount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load time slots for the restaurant
+    if (widget.restaurant != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final timeSlotService = context.read<TimeSlotService>();
+        timeSlotService.getAvailableSlots(
+          widget.restaurant!.restaurantId,
+          DateTime.now(),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
     _addressController.dispose();
     _phoneController.dispose();
+    _couponController.dispose();
     super.dispose();
   }
 
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Please select a delivery time slot'),
+        backgroundColor: AppColors.errorRed,
+      ));
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     final cartService = context.read<CartService>();
+    final totalWithDiscount = cartService.totalPrice - _discountAmount;
 
     final result = await OrderService.placeOrder(
       cartItems: cartService.cartItems,
-      totalAmount: cartService.totalPrice,
+      totalAmount: totalWithDiscount,
       deliveryAddress: _addressController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
       paymentMethod: _paymentMethod,
+      restaurantId: widget.restaurant!.restaurantId,
+      timeSlotId: _selectedTimeSlot!.id,
+      couponCode: _appliedCouponCode,
     );
 
     if (!mounted) return;
@@ -233,6 +271,189 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Time Slot Selection
+                    if (widget.restaurant != null) ...[
+                      _sectionTitle('Select Delivery Time'),
+                      const SizedBox(height: 12),
+                      Consumer<TimeSlotService>(
+                        builder: (context, timeSlotService, _) {
+                          if (timeSlotService.isLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryOrange,
+                              ),
+                            );
+                          }
+
+                          if (timeSlotService.timeSlots.isEmpty) {
+                            return Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  'No time slots available for ${DateTime.now().toString().split(' ')[0]}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: AppColors.textGrey,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: timeSlotService.timeSlots.map((slot) {
+                              final isSelected =
+                                  _selectedTimeSlot?.id == slot.id;
+                              return GestureDetector(
+                                onTap: () =>
+                                    setState(() => _selectedTimeSlot = slot),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.primaryOrange
+                                        : Colors.white,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppColors.primaryOrange
+                                          : Colors.grey[300]!,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${slot.startTime} - ${slot.endTime}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${slot.capacity - slot.currentOrders} available',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isSelected
+                                              ? Colors.white70
+                                              : AppColors.textGrey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Coupon Code
+                    _sectionTitle('Apply Coupon (Optional)'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _couponController,
+                            decoration: const InputDecoration(
+                              labelText: 'Coupon Code',
+                              prefixIcon: Icon(Icons.local_offer_outlined),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _applyCoupon,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryOrange,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Apply',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_appliedCouponCode != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.successGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.successGreen.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '✓ Coupon Applied: $_appliedCouponCode',
+                              style: const TextStyle(
+                                color: AppColors.successGreen,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: _removeCoupon,
+                              child: const Icon(
+                                Icons.close,
+                                color: AppColors.successGreen,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Discount'),
+                            Text(
+                              '-₹${_discountAmount.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+
                     // Payment Method
                     _sectionTitle('Payment Method'),
                     const SizedBox(height: 8),
@@ -325,5 +546,58 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _sectionTitle(String title) {
     return Text(title,
         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold));
+  }
+
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Please enter a coupon code'),
+        backgroundColor: AppColors.errorRed,
+      ));
+      return;
+    }
+
+    if (widget.restaurant == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Restaurant information not available'),
+        backgroundColor: AppColors.errorRed,
+      ));
+      return;
+    }
+
+    // Mock API call - replace with actual API call
+    try {
+      // Simulating API validation
+      setState(() {
+        _appliedCouponCode = code;
+        // Calculate discount (example: 10% or fixed amount)
+        final cartService = context.read<CartService>();
+        _discountAmount = cartService.totalPrice * 0.1; // 10% discount
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          'Coupon applied! ₹${_discountAmount.toStringAsFixed(0)} discount',
+        ),
+        backgroundColor: AppColors.successGreen,
+      ));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Invalid coupon code'),
+        backgroundColor: AppColors.errorRed,
+      ));
+    }
+  }
+
+  void _removeCoupon() {
+    setState(() {
+      _appliedCouponCode = null;
+      _discountAmount = 0;
+      _couponController.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Coupon removed'),
+    ));
   }
 }

@@ -11,6 +11,9 @@ class OrderService {
     required String deliveryAddress,
     required String phoneNumber,
     required String paymentMethod,
+    required String restaurantId,
+    String? timeSlotId,
+    String? couponCode,
   }) async {
     try {
       final user = AuthService.currentUser;
@@ -35,6 +38,9 @@ class OrderService {
         'deliveryAddress': deliveryAddress,
         'phoneNumber': phoneNumber,
         'paymentMethod': paymentMethod,
+        'restaurantId': restaurantId,
+        if (timeSlotId != null) 'timeSlotId': timeSlotId,
+        if (couponCode != null) 'couponCode': couponCode,
       };
       final response = await ApiService.createOrder(orderData);
 
@@ -57,10 +63,7 @@ class OrderService {
       if (user == null) return [];
 
       final response = await ApiService.getUserOrders();
-      return response
-          .map((item) => Order.fromMap(item as Map<String, dynamic>))
-          .toList();
-      return [];
+      return response.map((item) => Order.fromMap(item)).toList();
     } catch (e) {
       print('Error fetching customer orders: $e');
       return [];
@@ -72,10 +75,7 @@ class OrderService {
     try {
       // Fetch all orders from backend
       final response = await ApiService.getAllOrders();
-      return response
-          .map((item) => Order.fromMap(item as Map<String, dynamic>))
-          .toList();
-      return [];
+      return response.map((item) => Order.fromMap(item)).toList();
     } catch (e) {
       print('Error fetching all orders: $e');
       return [];
@@ -106,10 +106,9 @@ class OrderService {
   static Future<bool> updateOrderStatus(
       String orderId, String newStatus) async {
     try {
-      final response = await ApiService.updateOrderStatus(orderId, newStatus);
+      await ApiService.updateOrderStatus(orderId, newStatus);
       print('✅ Order status updated to: $newStatus');
       return true;
-      return false;
     } catch (e) {
       print('❌ Error updating order status: $e');
       return false;

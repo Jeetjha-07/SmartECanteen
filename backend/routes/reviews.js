@@ -1,19 +1,21 @@
 const express = require('express');
-const admin = require('firebase-admin');
+const jwt = require('jsonwebtoken');
 const Review = require('../models/Review');
+const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Middleware to verify Firebase token
-const verifyToken = async (req, res, next) => {
+// Middleware to verify JWT token
+const verifyJWT = (req, res, next) => {
   try {
-    const idToken = req.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) {
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) {
       return res.status(401).json({ error: 'No token provided' });
     }
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
@@ -21,13 +23,20 @@ const verifyToken = async (req, res, next) => {
 };
 
 // Create review
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyJWT, async (req, res) => {
   try {
     const { orderId, rating, comment, imageUrl } = req.body;
     
+    // Fetch order to get restaurantId
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
     const review = await Review.create({
       orderId,
-      customerId: req.user.uid,
+      restaurantId: order.restaurantId,
+      customerId: req.user.userId,
       customerName: req.user.email?.split('@')[0],
       rating,
       comment,
@@ -53,6 +62,16 @@ router.get('/order/:orderId', async (req, res) => {
   }
 });
 
+// Get reviews for a restaurant
+router.get('/restaurant/:restaurantId', async (req, res) => {
+  try {
+    const reviews = await Review.find({ restaurantId: req.params.restaurantId }).sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all reviews (for analytics)
 router.get('/', async (req, res) => {
   try {
@@ -64,7 +83,7 @@ router.get('/', async (req, res) => {
 });
 
 // Update review
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyJWT, async (req, res) => {
   try {
     const { rating, comment, imageUrl } = req.body;
     
@@ -81,7 +100,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 });
 
 // Delete review
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyJWT, async (req, res) => {
   try {
     const review = await Review.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Review deleted' });

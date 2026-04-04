@@ -1,76 +1,155 @@
 const express = require('express');
-const admin = require('firebase-admin');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Middleware to verify Firebase token
-const verifyToken = async (req, res, next) => {
+// Verify JWT token
+const verifyJWT = (req, res, next) => {
   try {
-    const idToken = req.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) {
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) {
       return res.status(401).json({ error: 'No token provided' });
     }
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
   }
 };
 
-// Create or update user (called after Firebase signup)
-router.post('/sync', verifyToken, async (req, res) => {
+// Register
+router.post('/register', async (req, res) => {
   try {
-    const { name, role = 'customer' } = req.body;
-    const { uid, email } = req.user;
+    const { name, email, password, role = 'customer' } = req.body;
 
-    let user = await User.findOne({ uid });
-
-    if (!user) {
-      // Create new user
-      user = await User.create({
-        uid,
-        name: name || email.split('@')[0],
-        email,
-        role,
-      });
-    } else {
-      // Update existing user
-      user.name = name || user.name;
-      user.role = role || user.role;
-      await user.save();
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
-    res.json({ success: true, user });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role,
+      isActive: true,
+    });
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role, restaurantId: user.restaurantId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        restaurantId: user.restaurantId,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user || !user.password) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email, 
+        role: user.role,
+        restaurantId: user.restaurantId // Include restaurantId in JWT for restaurants
+      },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        restaurantId: user.restaurantId,
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Get current user
-router.get('/me', verifyToken, async (req, res) => {
+router.get('/me', verifyJWT, async (req, res) => {
   try {
-    const user = await User.findOne({ uid: req.user.uid });
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+      restaurantId: user.restaurantId,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Update current user
-router.put('/me', verifyToken, async (req, res) => {
+router.put('/me', verifyJWT, async (req, res) => {
   try {
     const { name, phoneNumber, address, profileImage } = req.body;
-    const user = await User.findOneAndUpdate(
-      { uid: req.user.uid },
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
       { name, phoneNumber, address, profileImage, updatedAt: new Date() },
       { new: true }
     );
-    res.json(user);
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -79,11 +158,18 @@ router.put('/me', verifyToken, async (req, res) => {
 // Get user by ID (for restaurant profile viewing)
 router.get('/:userId', async (req, res) => {
   try {
-    const user = await User.findOne({ uid: req.params.userId });
+    const user = await User.findById(req.params.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

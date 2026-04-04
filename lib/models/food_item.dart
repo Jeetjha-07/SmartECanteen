@@ -5,6 +5,7 @@ class FoodItem {
   final double price;
   final String imageUrl;
   final String category;
+  final String restaurantId;
   final bool isAvailable;
   final DateTime? createdAt;
 
@@ -15,6 +16,7 @@ class FoodItem {
     required this.price,
     required this.imageUrl,
     required this.category,
+    required this.restaurantId,
     this.isAvailable = true,
     this.createdAt,
   });
@@ -27,6 +29,7 @@ class FoodItem {
       price: (data['price'] ?? 0).toDouble(),
       imageUrl: data['imageUrl'] ?? '',
       category: data['category'] ?? '',
+      restaurantId: data['restaurantId'] ?? '',
       isAvailable: data['isAvailable'] ?? true,
       createdAt: data['createdAt'] != null
           ? DateTime.parse(data['createdAt'].toString())
@@ -41,6 +44,7 @@ class FoodItem {
       'description': description,
       'price': price,
       'imageUrl': imageUrl,
+      'restaurantId': restaurantId,
       'category': category,
       'isAvailable': isAvailable,
       'createdAt': createdAt?.toIso8601String(),
@@ -54,6 +58,7 @@ class FoodItem {
     double? price,
     String? imageUrl,
     String? category,
+    String? restaurantId,
     bool? isAvailable,
   }) {
     return FoodItem(
@@ -63,6 +68,7 @@ class FoodItem {
       price: price ?? this.price,
       imageUrl: imageUrl ?? this.imageUrl,
       category: category ?? this.category,
+      restaurantId: restaurantId ?? this.restaurantId,
       isAvailable: isAvailable ?? this.isAvailable,
       createdAt: createdAt,
     );

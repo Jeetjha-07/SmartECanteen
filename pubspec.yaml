@@ -1,5 +1,5 @@
 name: ecanteen
-description: E-Canteen App with Firebase Backend
+description: E-Canteen App with MongoDB Backend
 
 publish_to: 'none'
 version: 1.0.0+1
@@ -11,10 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase (Auth only - no Firestore or Storage)
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.8
-  google_sign_in: ^6.1.5
+  # Secure storage for JWT tokens
+  flutter_secure_storage: ^9.0.0
 
   # HTTP Client for MongoDB backend
   http: ^1.1.0

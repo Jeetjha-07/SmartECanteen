@@ -6,12 +6,17 @@ import '../../models/review.dart';
 import '../../utils/app_colors.dart';
 
 class RestaurantReviewsScreen extends StatelessWidget {
-  const RestaurantReviewsScreen({super.key});
+  final String restaurantId;
+  
+  const RestaurantReviewsScreen({
+    super.key,
+    required this.restaurantId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Review>>(
-      stream: ReviewService.getAllReviewsStream(),
+      stream: ReviewService.getRestaurantReviewsStream(restaurantId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

@@ -49,6 +49,7 @@ class OrderItem {
       price: price,
       imageUrl: imageUrl,
       category: category,
+      restaurantId: 'default-restaurant',
     );
   }
 

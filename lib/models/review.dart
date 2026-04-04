@@ -1,6 +1,7 @@
 class Review {
   final String id;
   final String orderId;
+  final String restaurantId;
   final String customerId;
   final String customerName;
   final double rating;
@@ -10,6 +11,7 @@ class Review {
   Review({
     required this.id,
     required this.orderId,
+    required this.restaurantId,
     required this.customerId,
     required this.customerName,
     required this.rating,
@@ -24,6 +26,7 @@ class Review {
     return Review(
       id: data['id'] ?? data['_id'] ?? '',
       orderId: data['orderId'] ?? '',
+      restaurantId: data['restaurantId'] ?? '',
       customerId: data['customerId'] ?? '',
       customerName: data['customerName'] ?? 'Anonymous',
       rating: rating,
@@ -37,6 +40,7 @@ class Review {
   Map<String, dynamic> toMap() {
     return {
       'orderId': orderId,
+      'restaurantId': restaurantId,
       'customerId': customerId,
       'customerName': customerName,
       'rating': rating,

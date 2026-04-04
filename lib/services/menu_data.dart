@@ -10,6 +10,7 @@ class MenuData {
           imageUrl:
               'https://tse1.mm.bing.net/th/id/OIP.CMV98hR5u-F4o_B_yPT7zgHaE8?pid=Api&P=0&h=220',
           category: 'Main Course',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '2',
@@ -19,6 +20,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Pizza',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '3',
@@ -28,6 +30,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1571091718767-18b5b1457add?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Burgers',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '4',
@@ -37,6 +40,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Beverages',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '5',
@@ -46,6 +50,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Pasta',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '6',
@@ -55,6 +60,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Desserts',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '7',
@@ -64,6 +70,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Appetizers',
+          restaurantId: 'default-restaurant',
         ),
         FoodItem(
           id: '8',
@@ -73,6 +80,7 @@ class MenuData {
           imageUrl:
               'https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
           category: 'Beverages',
+          restaurantId: 'default-restaurant',
         ),
       ];
 }

@@ -21,6 +21,17 @@ class _MenuScreenState extends State<MenuScreen> {
   final _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Load menu items once when screen opens
+    Future.microtask(() {
+      if (mounted) {
+        context.read<MenuService>().getMenuItems();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -28,165 +39,168 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cartService = context.watch<CartService>();
-
-    return FutureBuilder<List<FoodItem>>(
-      future: _selectedCategory == 'All'
-          ? MenuService.getMenuItems()
-          : MenuService.getMenuItems(category: _selectedCategory),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline,
-                    color: AppColors.errorRed, size: 48),
-                const SizedBox(height: 12),
-                Text('Error loading menu: ${snapshot.error}'),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => setState(() {}),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final allItems = snapshot.data ?? [];
-
-        // Extract categories
-        final categories = ['All'];
-        for (final item in allItems) {
-          if (!categories.contains(item.category)) {
-            categories.add(item.category);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Select Items'),
+        backgroundColor: AppColors.primaryOrange,
+      ),
+      body: Consumer2<MenuService, CartService>(
+        builder: (context, menuService, cartService, _) {
+          // Handle loading and error states
+          if (menuService.isLoading && menuService.items.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
           }
-        }
 
-        // Filter items
-        var filteredItems = allItems;
-        if (_selectedCategory != 'All') {
-          filteredItems = filteredItems
-              .where((item) => item.category == _selectedCategory)
-              .toList();
-        }
-        if (_searchQuery.isNotEmpty) {
-          filteredItems = filteredItems
-              .where((item) =>
-                  item.name
-                      .toLowerCase()
-                      .contains(_searchQuery.toLowerCase()) ||
-                  item.description
-                      .toLowerCase()
-                      .contains(_searchQuery.toLowerCase()))
-              .toList();
-        }
+          if (menuService.error != null && menuService.items.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: AppColors.errorRed, size: 48),
+                  const SizedBox(height: 12),
+                  Text('Error: ${menuService.error}'),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => menuService.getMenuItems(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
 
-        return Column(
-          children: [
-            // Search Bar
-            Container(
-              color: AppColors.primaryOrange,
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                decoration: InputDecoration(
-                  hintText: 'Search menu...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
+          final allItems = menuService.items;
+
+          // Extract categories
+          final categories = ['All'];
+          for (final item in allItems) {
+            if (!categories.contains(item.category)) {
+              categories.add(item.category);
+            }
+          }
+
+          // Filter items
+          var filteredItems = allItems;
+          if (_selectedCategory != 'All') {
+            filteredItems = filteredItems
+                .where((item) => item.category == _selectedCategory)
+                .toList();
+          }
+          if (_searchQuery.isNotEmpty) {
+            filteredItems = filteredItems
+                .where((item) =>
+                    item.name
+                        .toLowerCase()
+                        .contains(_searchQuery.toLowerCase()) ||
+                    item.description
+                        .toLowerCase()
+                        .contains(_searchQuery.toLowerCase()))
+                .toList();
+          }
+
+          return Column(
+            children: [
+              // Search Bar
+              Container(
+                color: AppColors.primaryOrange,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search menu...',
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Category chips
-            Container(
-              height: 50,
-              color: Colors.white,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final cat = categories[index];
-                  final isSelected = cat == _selectedCategory;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(cat,
-                          style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.textDark,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal)),
-                      selected: isSelected,
-                      onSelected: (_) =>
-                          setState(() => _selectedCategory = cat),
-                      backgroundColor: Colors.grey[100],
-                      selectedColor: AppColors.primaryOrange,
-                      checkmarkColor: Colors.white,
-                      showCheckmark: false,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Divider(height: 1),
-
-            // Items list
-            Expanded(
-              child: filteredItems.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.no_food, size: 64, color: Colors.grey),
-                          SizedBox(height: 12),
-                          Text('No items found',
-                              style: TextStyle(
-                                  fontSize: 18, color: AppColors.textGrey)),
-                        ],
+              // Category chips
+              Container(
+                height: 50,
+                color: Colors.white,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final cat = categories[index];
+                    final isSelected = cat == _selectedCategory;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(cat,
+                            style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textDark,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
+                        selected: isSelected,
+                        onSelected: (_) =>
+                            setState(() => _selectedCategory = cat),
+                        backgroundColor: Colors.grey[100],
+                        selectedColor: AppColors.primaryOrange,
+                        checkmarkColor: Colors.white,
+                        showCheckmark: false,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: filteredItems.length,
-                      itemBuilder: (context, index) {
-                        final item = filteredItems[index];
-                        final qty = cartService.getQuantity(item.id);
-                        return _buildMenuCard(context, item, qty, cartService);
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
+                    );
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Items list
+              Expanded(
+                child: filteredItems.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.no_food, size: 64, color: Colors.grey),
+                            SizedBox(height: 12),
+                            Text('No items found',
+                                style: TextStyle(
+                                    fontSize: 18, color: AppColors.textGrey)),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          final qty = cartService.getQuantity(item.id);
+                          return _buildMenuCard(
+                              context, item, qty, cartService);
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -203,24 +217,34 @@ class _MenuScreenState extends State<MenuScreen> {
             // Food image
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: item.imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.restaurant, color: Colors.grey),
-                ),
-                errorWidget: (_, __, ___) => Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.restaurant, color: Colors.grey),
-                ),
-              ),
+              child: item.imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: item.imageUrl,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.restaurant, color: Colors.grey),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.restaurant, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.restaurant, color: Colors.grey),
+                    ),
             ),
             const SizedBox(width: 12),
             // Item details

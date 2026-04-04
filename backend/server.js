@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const admin = require('firebase-admin');
 
 const app = express();
 
@@ -10,13 +9,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Firebase Admin SDK initialization
-admin.initializeApp({
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-});
 
 // MongoDB Connection
 let mongoConnected = false;
@@ -39,28 +31,14 @@ const checkMongoConnection = (req, res, next) => {
   next();
 };
 
-// Firebase-Auth Middleware (Verify ID token from Flutter client)
-const verifyFirebaseToken = async (req, res, next) => {
-  const idToken = req.headers.authorization?.split('Bearer ')[1];
-
-  if (!idToken) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-};
-
 // Routes (with database check)
 app.use('/api/users', checkMongoConnection, require('./routes/users'));
 app.use('/api/menu', checkMongoConnection, require('./routes/menu'));
 app.use('/api/orders', checkMongoConnection, require('./routes/orders'));
 app.use('/api/reviews', checkMongoConnection, require('./routes/reviews'));
+app.use('/api/restaurants', checkMongoConnection, require('./routes/restaurants'));
+app.use('/api/coupons', checkMongoConnection, require('./routes/coupons'));
+app.use('/api/timeslots', checkMongoConnection, require('./routes/timeslots'));
 
 // Health check
 app.get('/health', (req, res) => {

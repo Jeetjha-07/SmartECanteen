@@ -5,6 +5,8 @@ import 'restaurant_orders_screen.dart';
 import 'restaurant_menu_screen.dart';
 import 'restaurant_analytics_screen.dart';
 import 'restaurant_reviews_screen.dart';
+import 'restaurant_time_slots_screen.dart';
+import 'restaurant_shop_registration_screen.dart';
 import '../splash_screen.dart';
 
 class RestaurantHome extends StatefulWidget {
@@ -16,13 +18,39 @@ class RestaurantHome extends StatefulWidget {
 
 class _RestaurantHomeState extends State<RestaurantHome> {
   int _selectedIndex = 0;
+  bool _shopRegistered = true; // Assume registered by default
+  String? _restaurantId;
 
-  final List<Widget> _screens = const [
-    RestaurantOrdersScreen(),
-    RestaurantMenuScreen(),
-    RestaurantAnalyticsScreen(),
-    RestaurantReviewsScreen(),
-  ];
+  late List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkShopRegistration();
+    _initializeScreens();
+  }
+
+  void _initializeScreens() {
+    final user = AuthService.currentUser;
+    _restaurantId = user?.restaurantId;
+    
+    _screens = [
+      const RestaurantOrdersScreen(),
+      const RestaurantMenuScreen(),
+      const RestaurantTimeSlotsScreen(),
+      const RestaurantAnalyticsScreen(),
+      RestaurantReviewsScreen(restaurantId: _restaurantId ?? ''),
+    ];
+  }
+
+  // Check if restaurant has registered their shop
+  Future<void> _checkShopRegistration() async {
+    final user = AuthService.currentUser;
+    // If restaurantId is not set, shop is not registered yet
+    if (user != null && user.restaurantId == null) {
+      setState(() => _shopRegistered = false);
+    }
+  }
 
   Future<void> _logout() async {
     await AuthService.logout();
@@ -35,10 +63,16 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   @override
   Widget build(BuildContext context) {
-    const titles = ['Live Orders', 'Menu Management', 'Analytics', 'Reviews'];
+    // If shop not registered, show registration screen
+    if (!_shopRegistered) {
+      return const RestaurantShopRegistrationScreen();
+    }
+
+    const titles = ['Live Orders', 'Menu Management', 'Time Slots', 'Analytics', 'Reviews'];
     const icons = [
       Icons.receipt_long,
       Icons.restaurant_menu,
+      Icons.schedule,
       Icons.bar_chart,
       Icons.star,
     ];
@@ -55,18 +89,19 @@ class _RestaurantHomeState extends State<RestaurantHome> {
                 color: AppColors.primaryOrange,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.storefront, size: 18, color: Colors.white),
+              child:
+                  const Icon(Icons.storefront, size: 18, color: Colors.white),
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('E-Canteen Dashboard',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 Text(titles[_selectedIndex],
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.white60)),
+                    style:
+                        const TextStyle(fontSize: 11, color: Colors.white60)),
               ],
             ),
           ],
@@ -79,8 +114,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
               context: context,
               builder: (_) => AlertDialog(
                 title: const Text('Logout'),
-                content:
-                    const Text('Are you sure you want to logout?'),
+                content: const Text('Are you sure you want to logout?'),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -117,14 +151,11 @@ class _RestaurantHomeState extends State<RestaurantHome> {
           selectedFontSize: 11,
           unselectedFontSize: 10,
           items: [
-            BottomNavigationBarItem(
-                icon: Icon(icons[0]), label: titles[0]),
-            BottomNavigationBarItem(
-                icon: Icon(icons[1]), label: 'Menu'),
-            BottomNavigationBarItem(
-                icon: Icon(icons[2]), label: 'Analytics'),
-            BottomNavigationBarItem(
-                icon: Icon(icons[3]), label: 'Reviews'),
+            BottomNavigationBarItem(icon: Icon(icons[0]), label: titles[0]),
+            BottomNavigationBarItem(icon: Icon(icons[1]), label: 'Menu'),
+            BottomNavigationBarItem(icon: Icon(icons[2]), label: 'Slots'),
+            BottomNavigationBarItem(icon: Icon(icons[3]), label: 'Analytics'),
+            BottomNavigationBarItem(icon: Icon(icons[4]), label: 'Reviews'),
           ],
         ),
       ),

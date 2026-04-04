@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import 'customer/home_screen.dart';
@@ -26,8 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _fadeAnimation =
-        Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
     ));
@@ -44,13 +42,13 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    final firebaseUser = FirebaseAuth.instance.currentUser;
+    // Check if user is logged in using AuthService
+    final user = AuthService.currentUser;
 
-    if (firebaseUser != null) {
-      final user = await AuthService.loadCurrentUser();
+    if (user != null && AuthService.isLoggedIn) {
       if (!mounted) return;
 
-      if (user != null && user.isRestaurant) {
+      if (user.isRestaurant) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const RestaurantHome()),
         );

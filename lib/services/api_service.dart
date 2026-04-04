@@ -1,10 +1,12 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // Static JWT token storage
+  static String? _jwtToken;
+
   // 🎯 Automatically detect platform and use correct URL
   static String get baseUrl {
     if (kIsWeb) {
@@ -24,26 +26,31 @@ class ApiService {
       return 'http://localhost:3000/api';
     }
   }
-  
+
   // For production deployment
   static const String productionUrl = 'https://your-domain.com/api';
 
-  static Future<String?> getAuthToken() async {
-    try {
-      return await FirebaseAuth.instance.currentUser?.getIdToken();
-    } catch (e) {
-      print('Error getting token: $e');
-      return null;
-    }
+  /// Set JWT token (called after login/register)
+  static void setToken(String token) {
+    _jwtToken = token;
+    print('🔐 JWT token set');
   }
 
-  // Get headers with Firebase token
-  static Future<Map<String, String>> getHeaders() async {
-    final token = await getAuthToken();
-    return {
+  /// Clear JWT token (called on logout)
+  static void clearToken() {
+    _jwtToken = null;
+    print('🔐 JWT token cleared');
+  }
+
+  /// Get headers with JWT token
+  static Map<String, String> getHeaders() {
+    final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
     };
+    if (_jwtToken != null && _jwtToken!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $_jwtToken';
+    }
+    return headers;
   }
 
   // Make HTTP requests with error handling
@@ -53,9 +60,9 @@ class ApiService {
     dynamic body,
   }) async {
     try {
-      final headers = await getHeaders();
+      final headers = getHeaders();
       late http.Response response;
-      
+
       print('📡 API Request: $method $url');
       if (body != null) print('   Body: ${jsonEncode(body)}');
 
@@ -86,12 +93,14 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return jsonDecode(response.body);
       } else {
-        final errorMsg = 'API Error: ${response.statusCode}\nURL: $url\nResponse: ${response.body}';
+        final errorMsg =
+            'API Error: ${response.statusCode}\nURL: $url\nResponse: ${response.body}';
         print('❌ $errorMsg');
         throw Exception(errorMsg);
       }
     } on SocketException catch (e) {
-      final error = '❌ Connection Error: Cannot connect to server at ${url.split('/api')[0]}\nMake sure backend is running!\nError: $e';
+      final error =
+          '❌ Connection Error: Cannot connect to server\nMake sure backend is running!\nError: $e';
       print(error);
       throw Exception(error);
     } catch (e) {
@@ -100,13 +109,58 @@ class ApiService {
     }
   }
 
-  // USER ENDPOINTS
-  static Future<Map<String, dynamic>> syncUser(
-      {required String name, required String role}) async {
-    return await _makeRequest('POST', '$baseUrl/users/sync',
-        body: {'name': name, 'role': role});
+  // Generic instance methods for services to use
+  Future<dynamic> get(String url) async {
+    return await _makeRequest('GET', url);
   }
 
+  Future<dynamic> post(String url, {dynamic body}) async {
+    return await _makeRequest('POST', url, body: body);
+  }
+
+  Future<dynamic> put(String url, {dynamic body}) async {
+    return await _makeRequest('PUT', url, body: body);
+  }
+
+  Future<dynamic> delete(String url) async {
+    return await _makeRequest('DELETE', url);
+  }
+
+  // Public static method for services to call (wrapper for _makeRequest)
+  static Future<dynamic> makeRequest(
+    String method,
+    String url, {
+    dynamic body,
+  }) async {
+    return await _makeRequest(method, url, body: body);
+  }
+
+  // AUTH ENDPOINTS
+  static Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+    required String role,
+  }) async {
+    return await _makeRequest('POST', '$baseUrl/users/register', body: {
+      'name': name,
+      'email': email,
+      'password': password,
+      'role': role,
+    });
+  }
+
+  static Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    return await _makeRequest('POST', '$baseUrl/users/login', body: {
+      'email': email,
+      'password': password,
+    });
+  }
+
+  // USER ENDPOINTS
   static Future<Map<String, dynamic>> getCurrentUser() async {
     return await _makeRequest('GET', '$baseUrl/users/me');
   }
@@ -127,11 +181,13 @@ class ApiService {
 
   // MENU ENDPOINTS
   static Future<List<Map<String, dynamic>>> getMenuItems(
-      {String? category}) async {
+      {String? category, String? restaurantId}) async {
     String url = '$baseUrl/menu';
-    if (category != null) {
-      url += '?category=$category';
-    }
+    final params = <String>[];
+    if (category != null) params.add('category=$category');
+    if (restaurantId != null) params.add('restaurantId=$restaurantId');
+    if (params.isNotEmpty) url += '?${params.join('&')}';
+
     final result = await _makeRequest('GET', url);
     return List<Map<String, dynamic>>.from(result);
   }
@@ -217,6 +273,13 @@ class ApiService {
     if (orderId != null) {
       url = '$baseUrl/reviews/order/$orderId';
     }
+    final result = await _makeRequest('GET', url);
+    return List<Map<String, dynamic>>.from(result);
+  }
+
+  static Future<List<Map<String, dynamic>>> getRestaurantReviews(
+      String restaurantId) async {
+    final url = '$baseUrl/reviews/restaurant/$restaurantId';
     final result = await _makeRequest('GET', url);
     return List<Map<String, dynamic>>.from(result);
   }

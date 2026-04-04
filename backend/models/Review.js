@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const reviewSchema = new mongoose.Schema(
   {
     orderId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    restaurantId: { type: String, required: true }, // Link to Restaurant
     customerId: { type: String, required: true }, // Firebase Auth UID
     customerName: String,
     rating: { type: Number, required: true, min: 1, max: 5 },
