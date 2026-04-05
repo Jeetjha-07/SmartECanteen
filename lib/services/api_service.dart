@@ -279,9 +279,37 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getRestaurantReviews(
       String restaurantId) async {
-    final url = '$baseUrl/reviews/restaurant/$restaurantId';
-    final result = await _makeRequest('GET', url);
-    return List<Map<String, dynamic>>.from(result);
+    // Use authenticated endpoint for restaurant app
+    final url = '$baseUrl/reviews/restaurant/my/reviews';
+    print('\n🔍 API: Fetching restaurant reviews (AUTHENTICATED)');
+    print('   URL: $url');
+    print('   restaurantId param (unused): $restaurantId');
+
+    try {
+      final result = await _makeRequest('GET', url);
+
+      print('🔍 API: Response type: ${result.runtimeType}');
+      print('🔍 API: Response data: $result');
+
+      if (result is List) {
+        print('🔍 API: Response is a List with ${result.length} items');
+        final reviews = List<Map<String, dynamic>>.from(result);
+        print('🔍 API: Converted to ${reviews.length} review maps');
+        if (reviews.isNotEmpty) {
+          print('🔍 API: First review: ${reviews[0]}');
+        }
+        return reviews;
+      } else if (result is Map) {
+        print('❌ API: Response is a Map, not a List! Response: $result');
+        return [];
+      } else {
+        print('❌ API: Unknown response type: ${result.runtimeType}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ API: Error fetching restaurant reviews: $e');
+      rethrow;
+    }
   }
 
   static Future<Map<String, dynamic>> updateReview(

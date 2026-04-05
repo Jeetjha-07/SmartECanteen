@@ -8,8 +8,27 @@ import '../../models/order.dart';
 import '../../utils/app_colors.dart';
 import 'login_screen.dart';
 
-class OrderHistoryScreen extends StatelessWidget {
+class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
+
+  @override
+  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+}
+
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  late Future<List<Order>> _ordersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() {
+      _ordersFuture = OrderService.getCustomerOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +54,11 @@ class OrderHistoryScreen extends StatelessWidget {
       );
     }
 
-    return FutureBuilder<List<Order>>(
-      future: OrderService.getCustomerOrders(),
+    return RefreshIndicator(
+      onRefresh: _loadOrders,
+      color: AppColors.primaryOrange,
+      child: FutureBuilder<List<Order>>(
+      future: _ordersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -64,10 +86,12 @@ class OrderHistoryScreen extends StatelessWidget {
 
         return ListView.builder(
           padding: const EdgeInsets.all(12),
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: orders.length,
           itemBuilder: (context, index) => _OrderCard(order: orders[index]),
         );
       },
+    ),
     );
   }
 }

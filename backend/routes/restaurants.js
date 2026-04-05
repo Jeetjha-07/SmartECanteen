@@ -78,14 +78,22 @@ router.post('/register', verifyJWT, async (req, res) => {
 
     await restaurant.save();
 
-    // Update user role if not already
+    // Update user role and set restaurantId to their own userId for consistency
+    // This ensures: order.restaurantId = req.user.userId = user.restaurantId = restaurant.restaurantId
+    // IMPORTANT: Convert to string to match Order schema (restaurantId: String)
     await User.findByIdAndUpdate(
       req.user.userId,
       {
         role: 'restaurant',
-        restaurantId: restaurant._id.toString(),
+        restaurantId: req.user.userId.toString(),  // Convert to string!
       }
     );
+
+    console.log('🍽️ Restaurant registered successfully:');
+    console.log('   restaurantId:', req.user.userId + '');
+    console.log('   Restaurant._id:', restaurant._id);
+    console.log('   Restaurant.restaurantId:', req.user.userId + '');
+    console.log('   User.restaurantId (updated to):', req.user.userId.toString());
 
     res.status(201).json({
       message: 'Restaurant registered successfully',
@@ -212,6 +220,57 @@ router.put('/owner/timeslot-capacity', verifyJWT, async (req, res) => {
       restaurant,
     });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Maintenance: Fix restaurantId mismatch for existing restaurants
+router.post('/maintenance/fix-restaurant-ids', async (req, res) => {
+  try {
+    console.log('🔧 Starting restaurantId consistency check...');
+    
+    // Get all restaurant users
+    const restaurantUsers = await User.find({ role: 'restaurant' });
+    console.log(`Found ${restaurantUsers.length} restaurant users`);
+    
+    let fixed = 0;
+    const results = [];
+    
+    for (const user of restaurantUsers) {
+      // restaurantId should equal the user's own _id (req.user.userId)
+      // NOT the restaurant's _id
+      const correctRestaurantId = user._id.toString();
+      
+      if (user.restaurantId !== correctRestaurantId) {
+        console.log(`⚠️ User ${user.email} has mismatched restaurantId:`);
+        console.log(`   Current: ${user.restaurantId}, Should be: ${correctRestaurantId}`);
+        
+        // Update to correct value (user's own _id)
+        const oldRestaurantId = user.restaurantId;
+        user.restaurantId = correctRestaurantId;
+        await user.save();
+        
+        results.push({
+          email: user.email,
+          userId: user._id.toString(),
+          oldRestaurantId,
+          newRestaurantId: correctRestaurantId,
+          status: 'fixed'
+        });
+        fixed++;
+        console.log(`✅ Fixed ${user.email}: restaurantId = ${correctRestaurantId}`);
+      }
+    }
+    
+    console.log(`✅ Fixed ${fixed} restaurantId mismatches`);
+    res.json({
+      success: true,
+      message: `Fixed ${fixed} restaurantId mismatches. Reviews and analytics should now work correctly.`,
+      fixed,
+      details: results,
+    });
+  } catch (error) {
+    console.error('❌ Error fixing restaurantIds:', error);
     res.status(500).json({ error: error.message });
   }
 });

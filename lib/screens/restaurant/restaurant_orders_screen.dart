@@ -61,48 +61,58 @@ class _RestaurantOrdersScreenState extends State<RestaurantOrdersScreen>
 class _ActiveOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Order>>(
-      stream: OrderService.getActiveOrdersStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final orders = snapshot.data ?? [];
-
-        if (orders.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.successGreen.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check_circle_outline,
-                      color: AppColors.successGreen, size: 56),
-                ),
-                const SizedBox(height: 16),
-                const Text('All caught up!',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                const Text('No active orders at the moment',
-                    style: TextStyle(color: AppColors.textGrey)),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: orders.length,
-          itemBuilder: (context, index) =>
-              _RestaurantOrderCard(order: orders[index]),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.delayed(const Duration(milliseconds: 500));
       },
+      color: AppColors.primaryOrange,
+      child: StreamBuilder<List<Order>>(
+        stream: OrderService.getActiveOrdersStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final orders = snapshot.data ?? [];
+
+          if (orders.isEmpty) {
+            return Center(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.successGreen.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check_circle_outline,
+                          color: AppColors.successGreen, size: 56),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('All caught up!',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    const Text('No active orders at the moment',
+                        style: TextStyle(color: AppColors.textGrey)),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: orders.length,
+            itemBuilder: (context, index) =>
+                _RestaurantOrderCard(order: orders[index]),
+          );
+        },
+      ),
     );
   }
 }
@@ -110,29 +120,39 @@ class _ActiveOrdersTab extends StatelessWidget {
 class _AllOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Order>>(
-      stream: OrderService.getAllOrdersStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final orders = snapshot.data ?? [];
-
-        if (orders.isEmpty) {
-          return const Center(
-            child: Text('No orders yet',
-                style: TextStyle(color: AppColors.textGrey)),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: orders.length,
-          itemBuilder: (context, index) =>
-              _RestaurantOrderCard(order: orders[index], compact: true),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.delayed(const Duration(milliseconds: 500));
       },
+      color: AppColors.primaryOrange,
+      child: StreamBuilder<List<Order>>(
+        stream: OrderService.getAllOrdersStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final orders = snapshot.data ?? [];
+
+          if (orders.isEmpty) {
+            return const Center(
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                child: Text('No orders yet',
+                    style: TextStyle(color: AppColors.textGrey)),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: orders.length,
+            itemBuilder: (context, index) =>
+                _RestaurantOrderCard(order: orders[index], compact: true),
+          );
+        },
+      ),
     );
   }
 }
@@ -186,8 +206,6 @@ class _RestaurantOrderCardState extends State<_RestaurantOrderCard> {
     );
     if (confirm == true) _updateStatus('Cancelled');
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +379,6 @@ class _RestaurantOrderCardState extends State<_RestaurantOrderCard> {
                               borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
-
                     ],
                   ),
                 ],

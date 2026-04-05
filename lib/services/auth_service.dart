@@ -5,7 +5,6 @@ import 'api_service.dart';
 
 class AuthService {
   static const _tokenKey = 'jwt_token';
-  static const _userKey = 'user_data';
   static const storage = FlutterSecureStorage();
 
   static AppUser? _currentUser;

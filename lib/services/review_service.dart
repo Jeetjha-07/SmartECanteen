@@ -11,16 +11,26 @@ class ReviewService {
   }) async {
     try {
       final user = AuthService.currentUser;
-      if (user == null) return {'success': false, 'error': 'Not logged in'};
+      if (user == null) {
+        print('❌ Review: Not logged in');
+        return {'success': false, 'error': 'Not logged in'};
+      }
+
+      print(
+          '📝 Review: Submitting review for orderId: $orderId, rating: $rating');
 
       final reviewData = {
         'orderId': orderId,
         'rating': rating,
         'comment': comment,
       };
-      await ApiService.createReview(reviewData);
+
+      final response = await ApiService.createReview(reviewData);
+      print('✅ Review: Successfully submitted. Response: $response');
+
       return {'success': true};
     } catch (e) {
+      print('❌ Review: Error submitting - $e');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -29,16 +39,25 @@ class ReviewService {
   static Future<bool> hasReviewed(String orderId) async {
     try {
       final user = AuthService.currentUser;
-      if (user == null) return false;
+      if (user == null) {
+        print('⚠️ Review: User not logged in - cannot check if reviewed');
+        return false;
+      }
 
       final customerId = user.uid;
-      final reviews = await getAllReviews();
+      print('🔍 Review: Checking if user $customerId reviewed order $orderId');
 
-      // Check if current user has reviewed this order
-      return reviews.any((review) =>
+      final reviews = await getAllReviews();
+      print('   Total reviews in system: ${reviews.length}');
+
+      final hasReview = reviews.any((review) =>
           review.orderId == orderId && review.customerId == customerId);
+
+      print('   Result: $hasReview');
+
+      return hasReview;
     } catch (e) {
-      print('Error checking review: $e');
+      print('❌ Review: Error checking review - $e');
       return false;
     }
   }
@@ -54,14 +73,45 @@ class ReviewService {
     }
   }
 
-  // Get reviews for a specific restaurant
+  // Get reviews for a specific restaurant (AUTHENTICATED - uses JWT token)
   static Future<List<Review>> getRestaurantReviews(String restaurantId) async {
     try {
+      print(
+          '\n⭐ ReviewService: Fetching reviews for restaurantId: $restaurantId');
+      print(
+          '   ℹ️ Using authenticated endpoint: GET /reviews/restaurant/my/reviews');
+
       final response = await ApiService.getRestaurantReviews(restaurantId);
-      return response.map((item) => Review.fromMap(item)).toList();
+
+      print('⭐ ReviewService: API returned ${response.length} items');
+
+      if (response.isEmpty) {
+        print('⭐ ReviewService: No reviews in response');
+        return [];
+      }
+
+      print('⭐ ReviewService: Parsing reviews...');
+      final reviews = <Review>[];
+
+      for (int i = 0; i < response.length; i++) {
+        try {
+          print('   Parsing review $i: ${response[i]}');
+          final review = Review.fromMap(response[i]);
+          reviews.add(review);
+          print(
+              '   ✅ Parsed review: id=${review.id}, rating=${review.rating}, restaurantId=${review.restaurantId}');
+        } catch (e) {
+          print('   ❌ Error parsing review $i: $e');
+          print('      Raw data: ${response[i]}');
+        }
+      }
+
+      print('⭐ ReviewService: Successfully parsed ${reviews.length} reviews');
+      return reviews;
     } catch (e) {
-      print('Error fetching restaurant reviews: $e');
-      return [];
+      print(
+          '❌ ReviewService: Error fetching restaurant reviews for $restaurantId - $e');
+      rethrow;
     }
   }
 
@@ -74,7 +124,21 @@ class ReviewService {
 
   // Stream reviews for a specific restaurant (polls every 5 seconds)
   static Stream<List<Review>> getRestaurantReviewsStream(String restaurantId) {
+    print('\n🔄 ReviewService.getRestaurantReviewsStream: Starting stream');
+    print('   restaurantId parameter: $restaurantId');
+    if (restaurantId.isEmpty) {
+      print(
+          '   ⚠️ WARNING: restaurantId is EMPTY! Stream will return empty list');
+      // Return a stream that emits empty list periodically
+      return Stream.periodic(const Duration(seconds: 5), (_) {
+        print('   ⏰ Stream tick: restaurantId is still empty, returning empty');
+        return Future.value(<Review>[]);
+      }).asyncExpand((future) => future.asStream());
+    }
+
     return Stream.periodic(const Duration(seconds: 5), (_) {
+      print(
+          '   ⏰ Stream tick: Fetching reviews for restaurantId: $restaurantId');
       return getRestaurantReviews(restaurantId);
     }).asyncExpand((future) => future.asStream());
   }
@@ -127,7 +191,8 @@ class ReviewService {
   }
 
   // Get rating distribution for a restaurant
-  static Future<Map<int, int>> getRestaurantRatingDistribution(String restaurantId) async {
+  static Future<Map<int, int>> getRestaurantRatingDistribution(
+      String restaurantId) async {
     try {
       final reviews = await getRestaurantReviews(restaurantId);
       final Map<int, int> distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};

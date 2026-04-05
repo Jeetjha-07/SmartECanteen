@@ -70,7 +70,7 @@ class OrderService {
     }
   }
 
-  // Get all orders for restaurant (fetch from backend)
+  // Get all orders for restaurant (fetch from backend - filtered by users' restaurant)
   static Future<List<Order>> getAllOrders() async {
     try {
       // Fetch all orders from backend
@@ -78,6 +78,46 @@ class OrderService {
       return response.map((item) => Order.fromMap(item)).toList();
     } catch (e) {
       print('Error fetching all orders: $e');
+      return [];
+    }
+  }
+
+  // Get orders for a specific restaurant
+  static Future<List<Order>> getRestaurantOrders(String restaurantId) async {
+    try {
+      print(
+          '\n📊 Analytics: Fetching orders for restaurantId: "$restaurantId"');
+
+      // Fetch all orders from backend
+      final allOrders = await getAllOrders();
+
+      print('📊 Analytics: Backend returned ${allOrders.length} orders');
+
+      // ✅ Filter orders by the specified restaurantId
+      final filteredOrders = allOrders
+          .where((order) => order.restaurantId == restaurantId)
+          .toList();
+
+      print(
+          '📊 Analytics: After filtering for restaurantId "$restaurantId": ${filteredOrders.length} orders');
+
+      if (filteredOrders.isEmpty) {
+        print('   ⚠️ No orders found for restaurantId: $restaurantId');
+        print(
+            '   Available restaurantIds in orders: ${allOrders.map((o) => o.restaurantId).toSet()}');
+        return [];
+      }
+
+      // Debug: Print details to verify data
+      print('   Sample orders for this restaurant:');
+      for (var order in filteredOrders.take(3)) {
+        print(
+            '   - Order: ${order.id} | Amount: ₹${order.totalAmount} | Status: ${order.status} | RestaurantId: ${order.restaurantId}');
+      }
+
+      return filteredOrders;
+    } catch (e) {
+      print('❌ Error fetching restaurant orders: $e');
       return [];
     }
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/time_slot_service.dart';
-import '../../services/restaurant_service.dart';
 import '../../utils/app_colors.dart';
 import '../../models/time_slot.dart';
 
@@ -30,6 +29,11 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
     });
   }
 
+  Future<void> _refreshTimeSlots() async {
+    context.read<TimeSlotService>().getMyTimeSlots(date: _selectedDate);
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,10 +41,14 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
         title: const Text('Manage Time Slots'),
         backgroundColor: AppColors.primaryOrange,
       ),
-      body: Consumer<TimeSlotService>(
-        builder: (context, timeSlotService, _) {
-          return SingleChildScrollView(
-            child: Column(
+      body: RefreshIndicator(
+        onRefresh: _refreshTimeSlots,
+        color: AppColors.primaryOrange,
+        child: Consumer<TimeSlotService>(
+          builder: (context, timeSlotService, _) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
               children: [
                 // Date & Time Configuration Section
                 Container(
@@ -329,9 +337,10 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                 ),
               ],
             ),
-          );
-        },
-      ),
+            );
+          },
+        ),
+        ),
     );
   }
 

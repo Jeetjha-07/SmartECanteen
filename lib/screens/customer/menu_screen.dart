@@ -31,6 +31,11 @@ class _MenuScreenState extends State<MenuScreen> {
     });
   }
 
+  Future<void> _refreshMenu() async {
+    context.read<MenuService>().getMenuItems();
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -44,8 +49,11 @@ class _MenuScreenState extends State<MenuScreen> {
         title: const Text('Select Items'),
         backgroundColor: AppColors.primaryOrange,
       ),
-      body: Consumer2<MenuService, CartService>(
-        builder: (context, menuService, cartService, _) {
+      body: RefreshIndicator(
+        onRefresh: _refreshMenu,
+        color: AppColors.primaryOrange,
+        child: Consumer2<MenuService, CartService>(
+          builder: (context, menuService, cartService, _) {
           // Handle loading and error states
           if (menuService.isLoading && menuService.items.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -200,6 +208,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }

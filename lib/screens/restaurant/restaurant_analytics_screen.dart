@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/analytics_service.dart';
+import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
 
 class RestaurantAnalyticsScreen extends StatefulWidget {
@@ -20,7 +21,20 @@ class _RestaurantAnalyticsScreenState extends State<RestaurantAnalyticsScreen> {
   }
 
   Future<void> _loadAnalytics() async {
-    _analyticsData = AnalyticsService.getBasicAnalytics();
+    final user = AuthService.currentUser;
+    print('📊 Analytics Screen: Loading analytics');
+    print('   User email: ${user?.email}');
+    print('   User restaurantId: ${user?.restaurantId}');
+
+    if (user?.restaurantId == null) {
+      // Show error if no restaurant ID
+      print('❌ Analytics Screen: No restaurantId found!');
+      _analyticsData =
+          Future.value({'error': 'Restaurant information not available'});
+    } else {
+      print('✅ Analytics Screen: Using restaurantId: ${user!.restaurantId}');
+      _analyticsData = AnalyticsService.getBasicAnalytics(user!.restaurantId!);
+    }
     setState(() {});
   }
 

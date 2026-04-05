@@ -566,25 +566,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    // Mock API call - replace with actual API call
     try {
-      // Simulating API validation
-      setState(() {
-        _appliedCouponCode = code;
-        // Calculate discount (example: 10% or fixed amount)
-        final cartService = context.read<CartService>();
-        _discountAmount = cartService.totalPrice * 0.1; // 10% discount
-      });
+      final cartService = context.read<CartService>();
+      final couponService = context.read<CouponService>();
+      
+      // Call actual API validation with restaurant ID
+      final result = await couponService.validateCoupon(
+        code: code,
+        restaurantId: widget.restaurant!.restaurantId,
+        orderAmount: cartService.totalPrice,
+      );
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          'Coupon applied! ₹${_discountAmount.toStringAsFixed(0)} discount',
-        ),
-        backgroundColor: AppColors.successGreen,
-      ));
+      if (result != null && result['valid'] == true) {
+        setState(() {
+          _appliedCouponCode = code;
+          _discountAmount = result['discount'] ?? 0.0;
+        });
+
+        String discountText = '';
+        final coupon = result['coupon'];
+        if (coupon != null && coupon.discountType == 'percentage') {
+          discountText = '${coupon.discountValue}% discount';
+        } else {
+          discountText = 'fixed discount';
+        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            'Coupon applied! ₹${_discountAmount.toStringAsFixed(0)} $discountText',
+          ),
+          backgroundColor: AppColors.successGreen,
+        ));
+      } else {
+        if (!mounted) return;
+        final errorMsg = result?['error'] ?? 'Invalid coupon code';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: AppColors.errorRed,
+        ));
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Invalid coupon code'),
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: ${e.toString()}'),
         backgroundColor: AppColors.errorRed,
       ));
     }

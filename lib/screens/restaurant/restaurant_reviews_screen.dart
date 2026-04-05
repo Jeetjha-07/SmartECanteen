@@ -5,7 +5,7 @@ import '../../services/review_service.dart';
 import '../../models/review.dart';
 import '../../utils/app_colors.dart';
 
-class RestaurantReviewsScreen extends StatelessWidget {
+class RestaurantReviewsScreen extends StatefulWidget {
   final String restaurantId;
   
   const RestaurantReviewsScreen({
@@ -14,74 +14,114 @@ class RestaurantReviewsScreen extends StatelessWidget {
   });
 
   @override
+  State<RestaurantReviewsScreen> createState() => _RestaurantReviewsScreenState();
+}
+
+class _RestaurantReviewsScreenState extends State<RestaurantReviewsScreen> {
+  Future<void> _refreshReviews() async {
+    print('\n🔄 RestaurantReviewsScreen: Refreshing reviews for: ${widget.restaurantId}');
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    print('\n🎬 RestaurantReviewsScreen State initState:');
+    print('   restaurantId: ${widget.restaurantId}');
+    if (widget.restaurantId.isEmpty) {
+      print('   ⚠️ WARNING: restaurantId is EMPTY!');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Review>>(
-      stream: ReviewService.getRestaurantReviewsStream(restaurantId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    print('\n🔵 RestaurantReviewsScreen: Build called');
+    print('   restaurantId from widget: ${widget.restaurantId}');
+    print('   restaurantId isEmpty: ${widget.restaurantId.isEmpty}');
+    return RefreshIndicator(
+      onRefresh: _refreshReviews,
+      color: AppColors.primaryOrange,
+      child: StreamBuilder<List<Review>>(
+        stream: ReviewService.getRestaurantReviewsStream(widget.restaurantId),
+        builder: (context, snapshot) {
+          print('\n📡 StreamBuilder: Connection state: ${snapshot.connectionState}');
+          print('   hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
+          if (snapshot.hasData) {
+            print('   Data count: ${snapshot.data?.length ?? 0}');
+          }
+          if (snapshot.hasError) {
+            print('   Error: ${snapshot.error}');
+          }
 
-        final reviews = snapshot.data ?? [];
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (reviews.isEmpty) {
-          return const Center(
+          final reviews = snapshot.data ?? [];
+
+          if (reviews.isEmpty) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.star_outline, size: 64, color: Colors.grey),
+                    SizedBox(height: 12),
+                    Text('No reviews yet',
+                        style: TextStyle(
+                            fontSize: 18, color: AppColors.textGrey)),
+                    SizedBox(height: 6),
+                    Text('Reviews from customers will appear here',
+                        style: TextStyle(color: AppColors.textGrey)),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Compute stats
+          final avgRating =
+              reviews.map((r) => r.rating).reduce((a, b) => a + b) /
+                  reviews.length;
+          final Map<int, int> dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+          for (final r in reviews) {
+            dist[r.rating.round()] = (dist[r.rating.round()] ?? 0) + 1;
+          }
+
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(14),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.star_outline, size: 64, color: Colors.grey),
-                SizedBox(height: 12),
-                Text('No reviews yet',
-                    style: TextStyle(
-                        fontSize: 18, color: AppColors.textGrey)),
-                SizedBox(height: 6),
-                Text('Reviews from customers will appear here',
-                    style: TextStyle(color: AppColors.textGrey)),
+                // Rating Summary Card
+                _RatingSummaryCard(
+                    avgRating: avgRating,
+                    totalReviews: reviews.length,
+                    distribution: dist),
+                const SizedBox(height: 20),
+
+                // Reviews header
+                Row(
+                  children: [
+                    const Text('All Reviews',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    Text('${reviews.length} total',
+                        style: const TextStyle(color: AppColors.textGrey)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Reviews list
+                ...reviews.map((r) => _ReviewCard(review: r)),
               ],
             ),
           );
-        }
-
-        // Compute stats
-        final avgRating =
-            reviews.map((r) => r.rating).reduce((a, b) => a + b) /
-                reviews.length;
-        final Map<int, int> dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
-        for (final r in reviews) {
-          dist[r.rating.round()] = (dist[r.rating.round()] ?? 0) + 1;
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Rating Summary Card
-              _RatingSummaryCard(
-                  avgRating: avgRating,
-                  totalReviews: reviews.length,
-                  distribution: dist),
-              const SizedBox(height: 20),
-
-              // Reviews header
-              Row(
-                children: [
-                  const Text('All Reviews',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  Text('${reviews.length} total',
-                      style: const TextStyle(color: AppColors.textGrey)),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Reviews list
-              ...reviews.map((r) => _ReviewCard(review: r)),
-            ],
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }

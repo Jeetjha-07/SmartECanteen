@@ -43,7 +43,16 @@ router.post('/register', async (req, res) => {
       password: hashedPassword,
       role,
       isActive: true,
+      // For restaurant users, restaurantId is their own userId
+      restaurantId: role === 'restaurant' ? null : undefined,
     });
+
+    // For restaurant users, set restaurantId to their own _id
+    if (role === 'restaurant') {
+      user.restaurantId = user._id.toString();
+      await user.save();
+      console.log(`🍽️ Created restaurant user: ${user.email}, restaurantId: ${user.restaurantId}`);
+    }
 
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role, restaurantId: user.restaurantId },
@@ -98,6 +107,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: '30d' }
     );
 
+    if (user.role === 'restaurant') {
+      console.log(`🍽️ Restaurant login: ${user.email}, restaurantId: ${user.restaurantId}`);
+    }
+
     res.json({
       success: true,
       token,
@@ -117,10 +130,25 @@ router.post('/login', async (req, res) => {
 // Get current user
 router.get('/me', verifyJWT, async (req, res) => {
   try {
+    console.log('\n👤 GET /users/me - Request');
+    console.log('   req.user.userId: ' + req.user.userId);
+    console.log('   req.user.role: ' + req.user.role);
+    console.log('   req.user.restaurantId: ' + req.user.restaurantId);
+    
     const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
+    console.log('   DB User found:');
+    console.log('   user._id: ' + user._id);
+    console.log('   user.role: ' + user.role);
+    console.log('   user.restaurantId: ' + user.restaurantId);
+    
+    if (user.role === 'restaurant' && !user.restaurantId) {
+      console.log('   ⚠️ WARNING: Restaurant user has no restaurantId!');
+    }
+    
     res.json({
       _id: user._id,
       name: user.name,
@@ -149,6 +177,30 @@ router.put('/me', verifyJWT, async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Maintenance: Fix restaurant users missing restaurantId (admin only)
+router.post('/maintenance/fix-restaurant-ids', async (req, res) => {
+  try {
+    // Find all restaurant users without restaurantId
+    const broken = await User.find({ role: 'restaurant', restaurantId: { $in: [null, '', undefined] } });
+    
+    console.log(`🔧 Fixing ${broken.length} restaurant users missing restaurantId`);
+    
+    for (const user of broken) {
+      user.restaurantId = user._id.toString();
+      await user.save();
+      console.log(`✅ Fixed: ${user.email} -> restaurantId: ${user.restaurantId}`);
+    }
+    
+    res.json({
+      success: true,
+      message: `Fixed ${broken.length} restaurant users`,
+      fixed: broken.length,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

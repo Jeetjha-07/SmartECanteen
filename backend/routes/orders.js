@@ -26,8 +26,11 @@ router.post('/', verifyJWT, async (req, res) => {
   try {
     const { items, totalAmount, deliveryAddress, phoneNumber, paymentMethod, specialInstructions, restaurantId, timeSlotId, couponCode } = req.body;
     
-    console.log('📦 Creating order for customer:', req.user.userId, 'at restaurant:', restaurantId);
-    console.log('Order data:', { totalAmount, deliveryAddress, itemCount: items?.length, timeSlotId });
+    console.log('\n📦 CREATE ORDER - Request received');
+    console.log('   Customer: ' + req.user.userId);
+    console.log('   restaurantId (from body): "' + restaurantId + '" (type: ' + typeof restaurantId + ')');
+    console.log('   Items: ' + items?.length);
+    console.log('   Amount: ₹' + totalAmount);
     
     // Validate required fields
     if (!items || items.length === 0) {
@@ -74,13 +77,16 @@ router.post('/', verifyJWT, async (req, res) => {
       status: 'Pending',
     });
 
+    console.log('   ✅ Saved to DB - Order.' + order._id);
+    console.log('   ✅ Saved restaurantId: "' + order.restaurantId + '"');
+
     // If timeSlotId is provided, increment currentOrders
     if (timeSlotId) {
       const timeSlot = await TimeSlot.findById(timeSlotId);
       if (timeSlot) {
         timeSlot.currentOrders += 1;
         await timeSlot.save();
-        console.log(`📊 Updated time slot ${timeSlotId}: ${timeSlot.currentOrders}/${timeSlot.capacity} orders`);
+        console.log(`   📊 Updated time slot ${timeSlotId}: ${timeSlot.currentOrders}/${timeSlot.capacity} orders`);
       }
     }
     
@@ -104,6 +110,51 @@ router.get('/', verifyJWT, async (req, res) => {
   }
 });
 
+// DEBUG: Get diagnostics about orders for this restaurant
+router.get('/debug/stats', verifyJWT, async (req, res) => {
+  try {
+    if (req.user.role !== 'restaurant') {
+      return res.status(403).json({ error: 'Only restaurants can access this endpoint' });
+    }
+
+    const restaurantIdString = req.user.userId.toString();
+    const allOrders = await Order.find({});
+    const matchingOrders = await Order.find({ restaurantId: restaurantIdString });
+
+    const User = require('../models/User');
+    const user = await User.findById(req.user.userId);
+
+    return res.json({
+      debug_info: {
+        user_id: req.user.userId + '',
+        user_id_type: typeof req.user.userId,
+        user_restaurantId_from_jwt: req.user.restaurantId,
+        user_restaurantId_from_db: user?.restaurantId,
+        query_used: restaurantIdString,
+      },
+      stats: {
+        total_orders_in_db: allOrders.length,
+        orders_matching_this_restaurant: matchingOrders.length,
+      },
+      sample_orders_in_db: allOrders.slice(0, 5).map(o => ({
+        id: o._id + '',
+        restaurantId: o.restaurantId,
+        customerId: o.customerId,
+        totalAmount: o.totalAmount,
+        status: o.status,
+      })),
+      your_orders: matchingOrders.slice(0, 5).map(o => ({
+        id: o._id + '',
+        restaurantId: o.restaurantId,
+        totalAmount: o.totalAmount,
+        status: o.status,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all orders (for restaurant dashboard to see only their incoming orders)
 router.get('/all/orders', verifyJWT, async (req, res) => {
   try {
@@ -113,8 +164,36 @@ router.get('/all/orders', verifyJWT, async (req, res) => {
     }
 
     // Get orders only for this restaurant using userId as restaurantId (matching how orders are created)
-    const orders = await Order.find({ restaurantId: req.user.userId }).sort({ orderDate: -1 });
-    console.log(`📋 Retrieved ${orders.length} orders for restaurant:`, req.user.userId);
+    // Convert userId to string to match the String type in Order schema
+    const restaurantIdString = req.user.userId.toString();
+    
+    console.log('\n📋 Orders.get(/all/orders) - Authenticated Request');
+    console.log('   User email: ' + req.user.email);
+    console.log('   User role: ' + req.user.role);
+    console.log('   req.user.userId: ' + req.user.userId + ' (type: ' + typeof req.user.userId + ')');
+    console.log('   restaurantIdString: ' + restaurantIdString + ' (type: ' + typeof restaurantIdString + ')');
+    
+    const orders = await Order.find({ restaurantId: restaurantIdString }).sort({ orderDate: -1 });
+    
+    console.log('   Query result: Found ' + orders.length + ' orders');
+    if (orders.length > 0) {
+      console.log('   Sample orders:');
+      orders.slice(0, 3).forEach((o, idx) => {
+        console.log('   [' + (idx + 1) + '] Order ' + o._id + ': restaurantId="' + o.restaurantId + '" | Amount: ₹' + o.totalAmount + ' | Status: ' + o.status);
+      });
+    } else {
+      console.log('   ⚠️ WARNING: No orders found for this restaurant!');
+      console.log('   Checking all orders in database...');
+      const allOrders = await Order.find({}).sort({ orderDate: -1 });
+      console.log('   Total orders in DB: ' + allOrders.length);
+      if (allOrders.length > 0) {
+        console.log('   Sample of ALL orders in DB:');
+        allOrders.slice(0, 5).forEach((o, idx) => {
+          console.log('   [' + (idx + 1) + '] restaurantId="' + o.restaurantId + '" (looking for "' + restaurantIdString + '")');
+        });
+      }
+    }
+    
     res.json(orders);
   } catch (error) {
     console.error('❌ Error fetching restaurant orders:', error);

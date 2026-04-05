@@ -62,6 +62,7 @@ class Order {
   final String id;
   final String customerId;
   final String customerName;
+  final String restaurantId;
   final List<OrderItem> items;
   final double totalAmount;
   final String deliveryAddress;
@@ -82,6 +83,7 @@ class Order {
     required this.id,
     required this.customerId,
     required this.customerName,
+    required this.restaurantId,
     required this.items,
     required this.totalAmount,
     required this.deliveryAddress,
@@ -97,6 +99,7 @@ class Order {
       id: data['id'] ?? data['_id'] ?? '',
       customerId: data['customerId'] ?? '',
       customerName: data['customerName'] ?? 'Customer',
+      restaurantId: data['restaurantId'] ?? '',
       items: (data['items'] as List<dynamic>? ?? [])
           .map((item) => OrderItem.fromMap(item as Map<String, dynamic>))
           .toList(),
@@ -118,6 +121,7 @@ class Order {
     return {
       'customerId': customerId,
       'customerName': customerName,
+      'restaurantId': restaurantId,
       'items': items.map((item) => item.toMap()).toList(),
       'totalAmount': totalAmount,
       'deliveryAddress': deliveryAddress,

@@ -6,6 +6,7 @@ import 'restaurant_menu_screen.dart';
 import 'restaurant_analytics_screen.dart';
 import 'restaurant_reviews_screen.dart';
 import 'restaurant_time_slots_screen.dart';
+import 'restaurant_coupons_screen.dart';
 import 'restaurant_shop_registration_screen.dart';
 import '../splash_screen.dart';
 
@@ -34,13 +35,27 @@ class _RestaurantHomeState extends State<RestaurantHome> {
     final user = AuthService.currentUser;
     _restaurantId = user?.restaurantId;
     
+    print('\n🏪 RestaurantHome: Initialize Screens');
+    print('   User: ${user?.email}');
+    print('   User.uid: ${user?.uid}');
+    print('   User.restaurantId: ${user?.restaurantId}');
+    print('   _restaurantId (local): $_restaurantId');
+    print('   isRestaurant: ${user?.isRestaurant}');
+    
+    if (_restaurantId == null || _restaurantId!.isEmpty) {
+      print('   ⚠️ WARNING: restaurantId is null or empty!');
+    }
+    
     _screens = [
       const RestaurantOrdersScreen(),
       const RestaurantMenuScreen(),
       const RestaurantTimeSlotsScreen(),
       const RestaurantAnalyticsScreen(),
       RestaurantReviewsScreen(restaurantId: _restaurantId ?? ''),
+      const RestaurantCouponsScreen(),
     ];
+    
+    print('   Screens initialized with restaurantId: $_restaurantId');
   }
 
   // Check if restaurant has registered their shop
@@ -68,14 +83,21 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       return const RestaurantShopRegistrationScreen();
     }
 
-    const titles = ['Live Orders', 'Menu Management', 'Time Slots', 'Analytics', 'Reviews'];
+    const titles = ['Live Orders', 'Menu Management', 'Time Slots', 'Analytics', 'Reviews', 'Coupons'];
     const icons = [
       Icons.receipt_long,
       Icons.restaurant_menu,
       Icons.schedule,
       Icons.bar_chart,
       Icons.star,
+      Icons.local_offer,
     ];
+
+    print('\n🏪️ RestaurantHome: Build() - Tab Index: $_selectedIndex (${titles[_selectedIndex]})');
+    print('   restaurantId: $_restaurantId');
+    if (_restaurantId == null || _restaurantId!.isEmpty) {
+      print('   ⚠️ CRITICAL: restaurantId is NULL/EMPTY! Reviews will not load!');
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -152,10 +174,11 @@ class _RestaurantHomeState extends State<RestaurantHome> {
           unselectedFontSize: 10,
           items: [
             BottomNavigationBarItem(icon: Icon(icons[0]), label: titles[0]),
-            BottomNavigationBarItem(icon: Icon(icons[1]), label: 'Menu'),
-            BottomNavigationBarItem(icon: Icon(icons[2]), label: 'Slots'),
-            BottomNavigationBarItem(icon: Icon(icons[3]), label: 'Analytics'),
-            BottomNavigationBarItem(icon: Icon(icons[4]), label: 'Reviews'),
+            BottomNavigationBarItem(icon: Icon(icons[1]), label: titles[1]),
+            BottomNavigationBarItem(icon: Icon(icons[2]), label: titles[2]),
+            BottomNavigationBarItem(icon: Icon(icons[3]), label: titles[3]),
+            BottomNavigationBarItem(icon: Icon(icons[4]), label: titles[4]),
+            BottomNavigationBarItem(icon: Icon(icons[5]), label: titles[5]),
           ],
         ),
       ),
