@@ -14,6 +14,7 @@ class CartItem {
       'quantity': quantity,
       'imageUrl': foodItem.imageUrl,
       'category': foodItem.category,
+      'restaurantId': foodItem.restaurantId,
     };
   }
 }

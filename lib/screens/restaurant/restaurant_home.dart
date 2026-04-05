@@ -34,18 +34,18 @@ class _RestaurantHomeState extends State<RestaurantHome> {
   void _initializeScreens() {
     final user = AuthService.currentUser;
     _restaurantId = user?.restaurantId;
-    
+
     print('\n🏪 RestaurantHome: Initialize Screens');
     print('   User: ${user?.email}');
     print('   User.uid: ${user?.uid}');
     print('   User.restaurantId: ${user?.restaurantId}');
     print('   _restaurantId (local): $_restaurantId');
     print('   isRestaurant: ${user?.isRestaurant}');
-    
+
     if (_restaurantId == null || _restaurantId!.isEmpty) {
       print('   ⚠️ WARNING: restaurantId is null or empty!');
     }
-    
+
     _screens = [
       const RestaurantOrdersScreen(),
       const RestaurantMenuScreen(),
@@ -54,7 +54,7 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       RestaurantReviewsScreen(restaurantId: _restaurantId ?? ''),
       const RestaurantCouponsScreen(),
     ];
-    
+
     print('   Screens initialized with restaurantId: $_restaurantId');
   }
 
@@ -83,7 +83,14 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       return const RestaurantShopRegistrationScreen();
     }
 
-    const titles = ['Live Orders', 'Menu Management', 'Time Slots', 'Analytics', 'Reviews', 'Coupons'];
+    const titles = [
+      'Live Orders',
+      'Menu Management',
+      'Time Slots',
+      'Analytics',
+      'Reviews',
+      'Coupons'
+    ];
     const icons = [
       Icons.receipt_long,
       Icons.restaurant_menu,
@@ -93,10 +100,12 @@ class _RestaurantHomeState extends State<RestaurantHome> {
       Icons.local_offer,
     ];
 
-    print('\n🏪️ RestaurantHome: Build() - Tab Index: $_selectedIndex (${titles[_selectedIndex]})');
+    print(
+        '\n🏪️ RestaurantHome: Build() - Tab Index: $_selectedIndex (${titles[_selectedIndex]})');
     print('   restaurantId: $_restaurantId');
     if (_restaurantId == null || _restaurantId!.isEmpty) {
-      print('   ⚠️ CRITICAL: restaurantId is NULL/EMPTY! Reviews will not load!');
+      print(
+          '   ⚠️ CRITICAL: restaurantId is NULL/EMPTY! Reviews will not load!');
     }
 
     return Scaffold(

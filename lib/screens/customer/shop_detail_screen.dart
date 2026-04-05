@@ -272,14 +272,61 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            Provider.of<CartService>(context, listen: false)
-                                .addItem(item);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${item.name} added to cart'),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
+                            final cartService = Provider.of<CartService>(
+                                context,
+                                listen: false);
+
+                            // Check if adding from different restaurant
+                            if (cartService.isDifferentRestaurant(item)) {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) => AlertDialog(
+                                  title: const Text('Switch Restaurant?'),
+                                  content: const Text(
+                                    'Your cart contains items from another restaurant. '
+                                    'Starting a new order will clear your current cart.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        cartService
+                                            .clearCartAndAddNewItem(item);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                '${item.name} added to new cart!'),
+                                            duration:
+                                                const Duration(seconds: 1),
+                                            backgroundColor:
+                                                AppColors.successGreen,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Switch'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              cartService.addItem(item);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${item.name} added to cart'),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            }
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -356,9 +403,51 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Provider.of<CartService>(context, listen: false)
-                        .addItem(item);
-                    Navigator.pop(context);
+                    final cartService =
+                        Provider.of<CartService>(context, listen: false);
+
+                    // Check if adding from different restaurant
+                    if (cartService.isDifferentRestaurant(item)) {
+                      Navigator.pop(context);
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) => AlertDialog(
+                          title: const Text('Switch Restaurant?'),
+                          content: const Text(
+                            'Your cart contains items from another restaurant. '
+                            'Starting a new order will clear your current cart.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                cartService.clearCartAndAddNewItem(item);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text('${item.name} added to new cart!'),
+                                    duration: const Duration(seconds: 1),
+                                    backgroundColor: AppColors.successGreen,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text('Switch'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      cartService.addItem(item);
+                      Navigator.pop(context);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryOrange,

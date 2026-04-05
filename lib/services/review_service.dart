@@ -95,14 +95,14 @@ class ReviewService {
 
       for (int i = 0; i < response.length; i++) {
         try {
-          print('   Parsing review $i: ${response[i]}');
+          print('   📝 Parsing review $i: id=${response[i]['_id']}');
           final review = Review.fromMap(response[i]);
           reviews.add(review);
           print(
               '   ✅ Parsed review: id=${review.id}, rating=${review.rating}, restaurantId=${review.restaurantId}');
         } catch (e) {
           print('   ❌ Error parsing review $i: $e');
-          print('      Raw data: ${response[i]}');
+          print('      Review ID: ${response[i]['_id'] ?? 'unknown'}');
         }
       }
 

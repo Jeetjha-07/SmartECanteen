@@ -205,8 +205,7 @@ class _RestaurantCouponsScreenState extends State<RestaurantCouponsScreen> {
     );
   }
 
-  Future<void> _toggleCouponActive(
-      BuildContext context, Coupon coupon) async {
+  Future<void> _toggleCouponActive(BuildContext context, Coupon coupon) async {
     final success = await context.read<CouponService>().updateCoupon(
       coupon.id,
       {'isActive': !coupon.isActive},
@@ -216,7 +215,8 @@ class _RestaurantCouponsScreenState extends State<RestaurantCouponsScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(coupon.isActive ? 'Coupon deactivated' : 'Coupon activated'),
+          content:
+              Text(coupon.isActive ? 'Coupon deactivated' : 'Coupon activated'),
         ),
       );
     } else {
@@ -683,9 +683,8 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                         controller: _discountValueController,
                         decoration: InputDecoration(
                           labelText: 'Value',
-                          prefixIcon: Text(_discountType == 'percentage'
-                              ? '%'
-                              : '₹'),
+                          prefixIcon:
+                              Text(_discountType == 'percentage' ? '%' : '₹'),
                           filled: true,
                           fillColor: Colors.grey[100],
                           border: OutlineInputBorder(
@@ -896,8 +895,8 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
     super.initState();
     _descriptionController =
         TextEditingController(text: widget.coupon.description);
-    _discountValueController = TextEditingController(
-        text: widget.coupon.discountValue.toString());
+    _discountValueController =
+        TextEditingController(text: widget.coupon.discountValue.toString());
     _minOrderController =
         TextEditingController(text: widget.coupon.minOrderValue.toString());
     _maxDiscountController = TextEditingController(
@@ -1093,8 +1092,7 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                           context: context,
                           initialDate: _validFrom,
                           firstDate: DateTime.now(),
-                          lastDate:
-                              DateTime.now().add(Duration(days: 365)),
+                          lastDate: DateTime.now().add(Duration(days: 365)),
                         );
                         if (picked != null) {
                           setState(() => _validFrom = picked);
@@ -1124,8 +1122,7 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                           context: context,
                           initialDate: _validUntil,
                           firstDate: _validFrom,
-                          lastDate:
-                              DateTime.now().add(Duration(days: 365)),
+                          lastDate: DateTime.now().add(Duration(days: 365)),
                         );
                         if (picked != null) {
                           setState(() => _validUntil = picked);

@@ -7,19 +7,21 @@ import '../../utils/app_colors.dart';
 
 class RestaurantReviewsScreen extends StatefulWidget {
   final String restaurantId;
-  
+
   const RestaurantReviewsScreen({
     super.key,
     required this.restaurantId,
   });
 
   @override
-  State<RestaurantReviewsScreen> createState() => _RestaurantReviewsScreenState();
+  State<RestaurantReviewsScreen> createState() =>
+      _RestaurantReviewsScreenState();
 }
 
 class _RestaurantReviewsScreenState extends State<RestaurantReviewsScreen> {
   Future<void> _refreshReviews() async {
-    print('\n🔄 RestaurantReviewsScreen: Refreshing reviews for: ${widget.restaurantId}');
+    print(
+        '\n🔄 RestaurantReviewsScreen: Refreshing reviews for: ${widget.restaurantId}');
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -44,8 +46,10 @@ class _RestaurantReviewsScreenState extends State<RestaurantReviewsScreen> {
       child: StreamBuilder<List<Review>>(
         stream: ReviewService.getRestaurantReviewsStream(widget.restaurantId),
         builder: (context, snapshot) {
-          print('\n📡 StreamBuilder: Connection state: ${snapshot.connectionState}');
-          print('   hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
+          print(
+              '\n📡 StreamBuilder: Connection state: ${snapshot.connectionState}');
+          print(
+              '   hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
           if (snapshot.hasData) {
             print('   Data count: ${snapshot.data?.length ?? 0}');
           }
@@ -69,8 +73,8 @@ class _RestaurantReviewsScreenState extends State<RestaurantReviewsScreen> {
                     Icon(Icons.star_outline, size: 64, color: Colors.grey),
                     SizedBox(height: 12),
                     Text('No reviews yet',
-                        style: TextStyle(
-                            fontSize: 18, color: AppColors.textGrey)),
+                        style:
+                            TextStyle(fontSize: 18, color: AppColors.textGrey)),
                     SizedBox(height: 6),
                     Text('Reviews from customers will appear here',
                         style: TextStyle(color: AppColors.textGrey)),
@@ -173,8 +177,8 @@ class _RatingSummaryCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text('$totalReviews reviews',
-                  style: const TextStyle(
-                      color: AppColors.textGrey, fontSize: 12)),
+                  style:
+                      const TextStyle(color: AppColors.textGrey, fontSize: 12)),
             ],
           ),
           const SizedBox(width: 20),
@@ -183,8 +187,7 @@ class _RatingSummaryCard extends StatelessWidget {
             child: Column(
               children: [5, 4, 3, 2, 1].map((star) {
                 final count = distribution[star] ?? 0;
-                final pct =
-                    totalReviews > 0 ? count / totalReviews : 0.0;
+                final pct = totalReviews > 0 ? count / totalReviews : 0.0;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(
@@ -193,8 +196,7 @@ class _RatingSummaryCard extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 12, color: AppColors.textGrey)),
                       const SizedBox(width: 4),
-                      const Icon(Icons.star,
-                          size: 12, color: Colors.amber),
+                      const Icon(Icons.star, size: 12, color: Colors.amber),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ClipRRect(
@@ -202,8 +204,8 @@ class _RatingSummaryCard extends StatelessWidget {
                           child: LinearProgressIndicator(
                             value: pct,
                             backgroundColor: Colors.grey[200],
-                            valueColor: const AlwaysStoppedAnimation(
-                                Colors.amber),
+                            valueColor:
+                                const AlwaysStoppedAnimation(Colors.amber),
                             minHeight: 8,
                           ),
                         ),
@@ -213,8 +215,7 @@ class _RatingSummaryCard extends StatelessWidget {
                         width: 20,
                         child: Text('$count',
                             style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textGrey)),
+                                fontSize: 11, color: AppColors.textGrey)),
                       ),
                     ],
                   ),
