@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../services/restaurant_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
@@ -17,7 +19,7 @@ class _RestaurantShopRegistrationScreenState
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String? _selectedImageUrl;
+  File? _selectedImageFile;
   bool _isSubmitting = false;
 
   @override
@@ -29,7 +31,7 @@ class _RestaurantShopRegistrationScreenState
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedImageUrl == null || _selectedImageUrl!.isEmpty) {
+    if (_selectedImageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Please select an image for your shop'),
         backgroundColor: AppColors.errorRed,
@@ -43,7 +45,7 @@ class _RestaurantShopRegistrationScreenState
       final result = await RestaurantService.registerShop(
         shopName: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        imageUrl: _selectedImageUrl!,
+        imageFile: _selectedImageFile!,
       );
 
       if (!mounted) return;
@@ -81,7 +83,9 @@ class _RestaurantShopRegistrationScreenState
     }
   }
 
-  void _selectImageUrl() async {
+  Future<void> _selectImage() async {
+    final ImagePicker picker = ImagePicker();
+
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -94,57 +98,80 @@ class _RestaurantShopRegistrationScreenState
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Shop Image',
+              'Select Shop Image',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Paste image URL',
-                hintText: 'https://...',
-                prefixIcon: Icon(Icons.link),
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  setState(() => _selectedImageUrl = value);
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Or use sample images:',
-              style: TextStyle(fontSize: 12, color: AppColors.textGrey),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400',
-                'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=400',
-                'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400',
-                'https://images.unsplash.com/photo-1536049310127-d810dbf434e1?w=400',
-              ]
-                  .map((url) => GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedImageUrl = url);
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            image: DecorationImage(
-                              image: NetworkImage(url),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                GestureDetector(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final XFile? image = await picker.pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 80,
+                    );
+                    if (image != null && mounted) {
+                      setState(() => _selectedImageFile = File(image.path));
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryOrange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ))
-                  .toList(),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: AppColors.primaryOrange,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Camera',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final XFile? image = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 80,
+                    );
+                    if (image != null && mounted) {
+                      setState(() => _selectedImageFile = File(image.path));
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryOrange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.image,
+                          color: AppColors.primaryOrange,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Gallery',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -262,7 +289,7 @@ class _RestaurantShopRegistrationScreenState
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: _selectImageUrl,
+                    onTap: _selectImage,
                     child: Container(
                       height: 200,
                       decoration: BoxDecoration(
@@ -271,15 +298,15 @@ class _RestaurantShopRegistrationScreenState
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        image: _selectedImageUrl != null
+                        image: _selectedImageFile != null
                             ? DecorationImage(
-                                image: NetworkImage(_selectedImageUrl!),
+                                image: FileImage(_selectedImageFile!),
                                 fit: BoxFit.cover,
                               )
                             : null,
                         color: AppColors.backgroundColor,
                       ),
-                      child: _selectedImageUrl == null
+                      child: _selectedImageFile == null
                           ? Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -290,7 +317,7 @@ class _RestaurantShopRegistrationScreenState
                                 ),
                                 const SizedBox(height: 12),
                                 const Text(
-                                  'Tap to select image',
+                                  'Tap to upload image',
                                   style: TextStyle(
                                     color: AppColors.primaryOrange,
                                     fontWeight: FontWeight.w500,
@@ -301,10 +328,11 @@ class _RestaurantShopRegistrationScreenState
                           : null,
                     ),
                   ),
-                  if (_selectedImageUrl != null) ...[
+                  if (_selectedImageFile != null) ...[
                     const SizedBox(height: 8),
                     ElevatedButton(
-                      onPressed: () => setState(() => _selectedImageUrl = null),
+                      onPressed: () =>
+                          setState(() => _selectedImageFile = null),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.errorRed,
                       ),

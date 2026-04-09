@@ -1,11 +1,46 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const MenuItem = require('../models/MenuItem');
 const Restaurant = require('../models/Restaurant');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    // Create unique filename with timestamp
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
 
 // Middleware to verify JWT token
 const verifyJWT = (req, res, next) => {
@@ -95,20 +130,38 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create menu item (Restaurant only)
-router.post('/', verifyJWT, async (req, res) => {
+router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
   try {
     // Verify it's a restaurant
     if (req.user.role !== 'restaurant') {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(403).json({ error: 'Only restaurants can create menu items' });
     }
 
     // Get restaurant by userId (restaurantId field in Restaurant document)
     const restaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
     if (!restaurant) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Restaurant not found. Please register your restaurant first.' });
     }
 
     if (!restaurant.shopRegistered) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ 
         error: 'Shop must be registered first before adding menu items. Please complete shop registration.' 
       });
@@ -117,11 +170,24 @@ router.post('/', verifyJWT, async (req, res) => {
     // Use the userId as restaurantId for menu items (matching Restaurant.restaurantId field)
     const restaurantId = req.user.userId;
 
-    const { name, description, price, imageUrl, category, preparationTime } = req.body;
+    const { name, description, price, category, preparationTime } = req.body;
     
     // Validate required fields
     if (!name || !price || !category) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Missing required fields: name, price, category' });
+    }
+    
+    // Handle image upload
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+      console.log(`📸 Menu item image uploaded: ${imageUrl}`);
     }
     
     console.log('📝 Creating menu item:', { name, price, category, restaurantId });
@@ -130,7 +196,7 @@ router.post('/', verifyJWT, async (req, res) => {
       name: name.trim(),
       description: description?.trim() || '',
       price: Number(price),
-      imageUrl: imageUrl?.trim() || '',
+      imageUrl: imageUrl, // Store the uploaded image path
       category: category.trim(),
       preparationTime: preparationTime || 30,
       restaurantId: restaurantId, // Use restaurantId from User profile
@@ -139,48 +205,110 @@ router.post('/', verifyJWT, async (req, res) => {
     console.log('✅ Menu item created in MongoDB:', item._id);
     res.status(201).json({ success: true, item });
   } catch (error) {
+    // Clean up uploaded file in case of error
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
     console.error('❌ Error creating menu item:', error);
     res.status(500).json({ error: error.message, details: error.stack });
   }
 });
 
 // Update menu item
-router.put('/:id', verifyJWT, async (req, res) => {
+router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
   try {
     // Verify ownership
     const existingItem = await MenuItem.findById(req.params.id);
     if (!existingItem) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(404).json({ error: 'Item not found' });
     }
 
     // Get restaurant by userId to verify ownership
     const restaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
     if (!restaurant) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Restaurant not found. Please register your restaurant first.' });
     }
 
     const restaurantId = req.user.userId;
     
     if (existingItem.restaurantId !== restaurantId) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(403).json({ error: 'You can only update your own items' });
     }
 
     if (!restaurant.shopRegistered) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ 
         error: 'Shop must be registered first before modifying menu items. Please complete shop registration.' 
       });
     }
 
-    const { name, description, price, imageUrl, category, isAvailable, preparationTime } = req.body;
+    const { name, description, price, category, isAvailable, preparationTime } = req.body;
+    
+    // Build update object
+    let updateData = {
+      name,
+      description,
+      price,
+      category,
+      isAvailable,
+      preparationTime,
+      updatedAt: new Date()
+    };
+
+    // Handle image upload if provided
+    if (req.file) {
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+      console.log(`📸 Menu item image updated: ${updateData.imageUrl}`);
+      
+      // Delete old image if it exists
+      if (existingItem.imageUrl && !existingItem.imageUrl.includes('placeholder')) {
+        const oldImagePath = path.join(__dirname, '../' + existingItem.imageUrl);
+        fs.unlink(oldImagePath, (err) => {
+          if (err) console.error('Error deleting old image:', err);
+          else console.log('✅ Old image deleted');
+        });
+      }
+    }
     
     const item = await MenuItem.findByIdAndUpdate(
       req.params.id,
-      { name, description, price, imageUrl, category, isAvailable, preparationTime, updatedAt: new Date() },
+      updateData,
       { new: true }
     );
     
     res.json(item);
   } catch (error) {
+    // Clean up uploaded file in case of error
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });

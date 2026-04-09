@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 import '../models/restaurant.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
 class RestaurantService extends ChangeNotifier {
   List<Restaurant> restaurants = [];
@@ -171,41 +173,65 @@ class RestaurantService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Register shop (simple form: name, description, image)
+  // Register shop (with image file upload)
   static Future<Map<String, dynamic>> registerShop({
     required String shopName,
     required String description,
-    required String imageUrl,
+    required File imageFile,
   }) async {
     try {
       print('📝 Registering shop: $shopName');
+      print('📸 Image file: ${imageFile.path}');
 
-      final response = await ApiService.makeRequest(
+      // Create multipart request
+      var request = http.MultipartRequest(
         'POST',
-        '${ApiService.baseUrl}/restaurants/register',
-        body: {
-          'restaurantName': shopName,
-          'description': description,
-          'imageUrl': imageUrl,
-          'cuisineTypes': ['Multi-Cuisine'],
-          'address': 'To be updated',
-          'phone': 'To be updated',
-          'city': 'Bangalore',
-          'zipCode': '560000',
-          'deliveryTime': 30,
-          'deliveryCharge': 50,
-          'minOrderValue': 100,
-          'defaultTimeSlotCapacity': 20,
-          'isVerified': true, // Show in customer list
-          'isOpen': true, // Make shop open
-        },
+        Uri.parse('${ApiService.baseUrl}/restaurants/register'),
       );
 
-      if (response != null) {
+      // Add headers (including Authorization)
+      final headers = ApiService.getHeaders();
+      request.headers.addAll(headers);
+
+      // Add form fields
+      request.fields['restaurantName'] = shopName;
+      request.fields['description'] = description;
+      request.fields['cuisineTypes'] = 'Multi-Cuisine';
+      request.fields['address'] = 'To be updated';
+      request.fields['phone'] = 'To be updated';
+      request.fields['city'] = 'Bangalore';
+      request.fields['zipCode'] = '560000';
+      request.fields['deliveryTime'] = '30';
+      request.fields['deliveryCharge'] = '50';
+      request.fields['minOrderValue'] = '100';
+      request.fields['defaultTimeSlotCapacity'] = '20';
+      request.fields['isVerified'] = 'true';
+      request.fields['isOpen'] = 'true';
+
+      // Add image file
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+
+      // Send request
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: $responseBody');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(responseBody);
         print('✅ Shop registered successfully');
-        return {'success': true, 'restaurant': response['restaurant']};
+        return {'success': true, 'restaurant': data['restaurant']};
+      } else {
+        final error = jsonDecode(responseBody);
+        print('❌ Error: ${error['error']}');
+        return {
+          'success': false,
+          'error': error['error'] ?? 'Failed to register shop'
+        };
       }
-      return {'success': false, 'error': 'Failed to register shop'};
     } catch (e) {
       print('❌ Error registering shop: $e');
       return {'success': false, 'error': e.toString()};

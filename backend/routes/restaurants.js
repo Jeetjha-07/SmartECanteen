@@ -1,11 +1,46 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const Restaurant = require('../models/Restaurant');
 const MenuItem = require('../models/MenuItem');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    // Create unique filename with timestamp
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
 
 // Middleware to verify JWT token
 const verifyJWT = (req, res, next) => {
@@ -23,12 +58,11 @@ const verifyJWT = (req, res, next) => {
 };
 
 // Register/Create Restaurant
-router.post('/register', verifyJWT, async (req, res) => {
+router.post('/register', verifyJWT, upload.single('image'), async (req, res) => {
   try {
     const {
       restaurantName,
       description,
-      imageUrl,
       cuisineTypes,
       address,
       phone,
@@ -51,15 +85,31 @@ router.post('/register', verifyJWT, async (req, res) => {
     });
 
     if (existingRestaurant) {
+      // Clean up uploaded file if restaurant already exists
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(400).json({ error: 'Restaurant already registered for this account' });
+    }
+
+    // Handle image upload - store the relative path for serving via /uploads
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+      console.log(`📸 Image uploaded: ${imageUrl}`);
+    } else {
+      // Use placeholder if no image provided
+      imageUrl = '/uploads/placeholder.jpg';
     }
 
     const restaurant = new Restaurant({
       restaurantId: req.user.userId,
       restaurantName,
       description,
-      imageUrl,
-      cuisineTypes,
+      imageUrl, // Store the relative path
+      cuisineTypes: cuisineTypes ? (typeof cuisineTypes === 'string' ? [cuisineTypes] : cuisineTypes) : ['Multi-Cuisine'],
       address,
       phone,
       city,
@@ -100,6 +150,12 @@ router.post('/register', verifyJWT, async (req, res) => {
       restaurant,
     });
   } catch (error) {
+    // Clean up uploaded file in case of error
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -175,9 +231,26 @@ router.get('/owner/profile', verifyJWT, async (req, res) => {
 });
 
 // Update restaurant details
-router.put('/owner/update', verifyJWT, async (req, res) => {
+router.put('/owner/update', verifyJWT, upload.single('image'), async (req, res) => {
   try {
     const updates = req.body;
+
+    // Handle image upload if provided
+    if (req.file) {
+      updates.imageUrl = `/uploads/${req.file.filename}`;
+      console.log(`📸 Restaurant image updated: ${updates.imageUrl}`);
+      
+      // Delete old image if it exists and is not the placeholder
+      const oldRestaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
+      if (oldRestaurant && oldRestaurant.imageUrl && !oldRestaurant.imageUrl.includes('placeholder')) {
+        const oldImagePath = path.join(__dirname, '../' + oldRestaurant.imageUrl);
+        fs.unlink(oldImagePath, (err) => {
+          if (err) console.error('Error deleting old image:', err);
+          else console.log('✅ Old image deleted');
+        });
+      }
+    }
+
     const restaurant = await Restaurant.findOneAndUpdate(
       { restaurantId: req.user.userId },
       updates,
@@ -185,6 +258,12 @@ router.put('/owner/update', verifyJWT, async (req, res) => {
     );
 
     if (!restaurant) {
+      // Clean up uploaded file in case of error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
       return res.status(404).json({ error: 'Restaurant not found' });
     }
 
@@ -193,6 +272,12 @@ router.put('/owner/update', verifyJWT, async (req, res) => {
       restaurant,
     });
   } catch (error) {
+    // Clean up uploaded file in case of error
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
