@@ -7,28 +7,19 @@ class ApiService {
   // Static JWT token storage
   static String? _jwtToken;
 
-  // 🎯 Automatically detect platform and use correct URL
-  static String get baseUrl {
-    if (kIsWeb) {
-      // Flutter Web: Use localhost (running in browser)
-      return 'http://localhost:3000/api';
-    } else if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      // Mobile: Detect automatically
-      if (Platform.isAndroid) {
-        // Android emulator special IP
-        return 'http://10.0.2.2:3000/api';
-      } else {
-        // iOS simulator
-        return 'http://localhost:3000/api';
-      }
-    } else {
-      // Windows/Mac desktop
-      return 'http://localhost:3000/api';
-    }
-  }
+  // 🎯 Backend hosted on Render (production)
+  static const String baseUrl = 'https://smartecanteen-1.onrender.com/api';
 
-  // For production deployment
-  static const String productionUrl = 'https://your-domain.com/api';
+  // Local development (if needed - commented out)
+  // static String get baseUrl {
+  //   if (kIsWeb) {
+  //     return 'http://localhost:3000/api';
+  //   } else if (Platform.isAndroid) {
+  //     return 'http://10.0.2.2:3000/api';
+  //   } else {
+  //     return 'http://localhost:3000/api';
+  //   }
+  // }
 
   /// Set JWT token (called after login/register)
   static void setToken(String token) {
