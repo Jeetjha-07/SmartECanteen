@@ -26,25 +26,25 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
-    
+
     // Logo fade and scale animation
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
     ));
-    
+
     _scaleAnimation =
         Tween<double>(begin: 0.6, end: 1.0).animate(CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
     ));
-    
+
     // Text slide animation
     _slideAnimation = Tween<double>(begin: 30, end: 0).animate(CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
     ));
-    
+
     _animController.forward();
     _checkAuthAndNavigate();
   }
@@ -131,7 +131,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 40),
-                  
+
                   // App name with slide animation
                   Transform.translate(
                     offset: Offset(0, _slideAnimation.value),
@@ -149,7 +149,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Tagline
                   Transform.translate(
                     offset: Offset(0, _slideAnimation.value),
@@ -167,7 +167,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 60),
-                  
+
                   // Loading indicator
                   FadeTransition(
                     opacity: _fadeAnimation,
