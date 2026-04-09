@@ -1,0 +1,22 @@
+# Root .dockerignore for backend build
+node_modules/
+npm-debug.log
+.git
+.gitignore
+.env
+.env.example
+reading/
+*.md
+.DS_Store
+.vscode
+.idea
+flutter/
+android/
+ios/
+web/
+windows/
+linux/
+macos/
+build/
+.dart_tool/
+pubspec.lock

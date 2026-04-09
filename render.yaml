@@ -1,15 +1,11 @@
 services:
   - type: web
     name: smartcanteen-backend
-    env: node
+    env: docker
     plan: free
     
-    # Root directory configuration
-    rootDir: backend
-    
-    # Build configuration
-    buildCommand: npm ci
-    startCommand: npm start
+    # Docker configuration (Build from root Dockerfile)
+    dockerfilePath: ./Dockerfile
     
     # Port configuration
     port: 3000
@@ -19,10 +15,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
-      # CRITICAL: MONGODB_URI and JWT_SECRET must be added as secret environment variables in Render dashboard
-      # Do NOT add them here to keep secrets secure
     
     # Health check
     healthCheckPath: /health
