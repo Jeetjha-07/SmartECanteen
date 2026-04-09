@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MenuService()),
       ],
       child: MaterialApp(
-        title: 'E-Canteen',
+        title: 'SmartECanteen',
         debugShowCheckedModeBanner: false,
         home: const SplashScreen(),
         routes: {

@@ -1,5 +1,5 @@
-name: ecanteen
-description: E-Canteen App with MongoDB Backend
+name: smartecanteen
+description: SmartECanteen - Your Campus Food Partner. Khanna mast life jabardast!
 
 publish_to: 'none'
 version: 1.0.0+1

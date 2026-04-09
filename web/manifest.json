@@ -1,11 +1,11 @@
 {
-    "name": "hello_world",
-    "short_name": "hello_world",
+    "name": "SmartECanteen",
+    "short_name": "SmartECanteen",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FF6B35",
+    "theme_color": "#FF6B35",
+    "description": "SmartECanteen - Your Campus Food Partner. Khanna mast life jabardast!",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
