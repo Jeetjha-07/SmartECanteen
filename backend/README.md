@@ -43,6 +43,18 @@ npm start
 
 Server runs on `http://localhost:3000`
 
+## 🚀 Deployment
+
+### Deploy to Render
+For production deployment to Render.com, follow the complete guide:
+- **[RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)** - Full deployment instructions
+
+**Quick start:**
+1. Push to main branch
+2. Connect GitHub repository to Render
+3. Set environment variables (MONGODB_URI, JWT_SECRET)
+4. Deploy!
+
 ## API Endpoints
 
 ### Users

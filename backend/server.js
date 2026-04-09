@@ -46,6 +46,45 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+});
+
+// Graceful shutdown for Render
+const gracefulShutdown = async (signal) => {
+  console.log(`\n📍 ${signal} signal received: closing HTTP server`);
+  
+  server.close(async () => {
+    console.log('✅ HTTP server closed');
+    
+    try {
+      await mongoose.connection.close();
+      console.log('✅ MongoDB connection closed');
+    } catch (err) {
+      console.error('❌ Error closing MongoDB connection:', err);
+    }
+    
+    process.exit(0);
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('❌ Forced shutdown - connections still active');
+    process.exit(1);
+  }, 30000);
+};
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });

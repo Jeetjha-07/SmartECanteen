@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: smartcanteen-backend
+    env: node
+    plan: free
+    
+    # Build configuration
+    buildCommand: npm install
+    startCommand: npm start
+    
+    # Port configuration
+    port: 3000
+    numInstances: 1
+    
+    # Environment variables (Set these in Render dashboard)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # MONGODB_URI and JWT_SECRET must be added as secret environment variables in Render dashboard
+      # Do NOT add them here to keep secrets secure
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Scaling (for free tier, autoscaling is limited)
+    autoDeploy: true
+    
+    # Build settings
+    dockerfilePath: ./Dockerfile
