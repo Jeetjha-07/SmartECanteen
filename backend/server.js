@@ -1,4 +1,17 @@
 require('dotenv').config();
+
+// ✅ CRITICAL: Validate required environment variables before starting
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ FATAL ERROR: Missing required environment variables:');
+  missingEnvVars.forEach(envVar => console.error(`   - ${envVar}`));
+  console.error('\n🚨 Server cannot start without these variables!');
+  console.error('📖 See RENDER_DEPLOYMENT.md for setup instructions.\n');
+  process.exit(1);
+}
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');

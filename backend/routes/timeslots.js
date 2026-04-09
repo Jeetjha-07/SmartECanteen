@@ -2,9 +2,9 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const TimeSlot = require('../models/TimeSlot');
 const Restaurant = require('../models/Restaurant');
+const { JWT_SECRET } = require('../config/jwt');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // Middleware to verify JWT token
 const verifyJWT = (req, res, next) => {

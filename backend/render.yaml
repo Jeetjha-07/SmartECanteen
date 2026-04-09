@@ -5,7 +5,7 @@ services:
     plan: free
     
     # Build configuration
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     
     # Port configuration
@@ -18,7 +18,7 @@ services:
         value: production
       - key: PORT
         value: 3000
-      # MONGODB_URI and JWT_SECRET must be added as secret environment variables in Render dashboard
+      # CRITICAL: MONGODB_URI and JWT_SECRET must be added as secret environment variables in Render dashboard
       # Do NOT add them here to keep secrets secure
     
     # Health check
@@ -26,6 +26,4 @@ services:
     
     # Scaling (for free tier, autoscaling is limited)
     autoDeploy: true
-    
-    # Build settings
     dockerfilePath: ./Dockerfile

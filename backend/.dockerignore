@@ -1,0 +1,23 @@
+# Files and directories to exclude from Docker image
+node_modules/
+npm-debug.log
+.npm
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+README.md
+RENDER_DEPLOYMENT.md
+.DS_Store
+reading/
+*.log
+.yarn-error
+.next
+dist
+build
+.vscode
+.idea
+*.swp
+*.swo
+*~
