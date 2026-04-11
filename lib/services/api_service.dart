@@ -31,6 +31,11 @@ class ApiService {
     print('🔐 JWT token cleared');
   }
 
+  /// Get JWT token
+  static String? getAuthToken() {
+    return _jwtToken;
+  }
+
   /// Get headers with JWT token
   static Map<String, String> getHeaders() {
     final headers = {

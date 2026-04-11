@@ -404,4 +404,55 @@ router.patch('/:id/availability', verifyJWT, async (req, res) => {
   }
 });
 
+// Upload image for menu item (without creating item)
+router.post('/upload', verifyJWT, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
+    }
+
+    // Get restaurant to verify shop is registered
+    const user = req.user;
+    const restaurant = await Restaurant.findOne({
+      restaurantId: user.userId,
+    });
+
+    if (!restaurant) {
+      // Clean up uploaded file
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ 
+        error: 'Restaurant not found. Please register your restaurant first.' 
+      });
+    }
+
+    if (!restaurant.shopRegistered) {
+      // Clean up uploaded file
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ 
+        error: 'Shop must be registered first before uploading menu item images.' 
+      });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    console.log(`📸 Menu item image uploaded: ${imageUrl}`);
+
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      message: 'Image uploaded successfully'
+    });
+  } catch (error) {
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

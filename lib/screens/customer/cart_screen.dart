@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
 import 'checkout_screen.dart';
 import 'login_screen.dart';
@@ -61,8 +62,7 @@ class CartScreen extends StatelessWidget {
           children: [
             // Cart header
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: Colors.white,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -70,8 +70,7 @@ class CartScreen extends StatelessWidget {
                   Text(
                     '${cartService.itemCount} item(s) in cart',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textGrey),
+                        fontWeight: FontWeight.w600, color: AppColors.textGrey),
                   ),
                   TextButton.icon(
                     onPressed: () {
@@ -79,8 +78,8 @@ class CartScreen extends StatelessWidget {
                         context: context,
                         builder: (_) => AlertDialog(
                           title: const Text('Clear Cart'),
-                          content: const Text(
-                              'Remove all items from your cart?'),
+                          content:
+                              const Text('Remove all items from your cart?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
@@ -92,8 +91,7 @@ class CartScreen extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               child: const Text('Clear',
-                                  style:
-                                      TextStyle(color: AppColors.errorRed)),
+                                  style: TextStyle(color: AppColors.errorRed)),
                             ),
                           ],
                         ),
@@ -127,7 +125,8 @@ class CartScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: CachedNetworkImage(
-                              imageUrl: cartItem.foodItem.imageUrl,
+                              imageUrl: _getCompleteImageUrl(
+                                  cartItem.foodItem.imageUrl),
                               width: 65,
                               height: 65,
                               fit: BoxFit.cover,
@@ -153,8 +152,7 @@ class CartScreen extends StatelessWidget {
                                 Text(
                                   '₹${cartItem.foodItem.price.toStringAsFixed(0)} each',
                                   style: const TextStyle(
-                                      color: AppColors.textGrey,
-                                      fontSize: 12),
+                                      color: AppColors.textGrey, fontSize: 12),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -170,8 +168,8 @@ class CartScreen extends StatelessWidget {
                           // Quantity controls
                           Container(
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: AppColors.primaryOrange),
+                              border:
+                                  Border.all(color: AppColors.primaryOrange),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -197,8 +195,8 @@ class CartScreen extends StatelessWidget {
                                           fontSize: 14)),
                                 ),
                                 InkWell(
-                                  onTap: () => cartService
-                                      .addItem(cartItem.foodItem),
+                                  onTap: () =>
+                                      cartService.addItem(cartItem.foodItem),
                                   child: const Padding(
                                     padding: EdgeInsets.all(6),
                                     child: Icon(Icons.add,
@@ -211,8 +209,8 @@ class CartScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           IconButton(
-                            onPressed: () => cartService
-                                .removeItem(cartItem.foodItem.id),
+                            onPressed: () =>
+                                cartService.removeItem(cartItem.foodItem.id),
                             icon: const Icon(Icons.delete_outline,
                                 color: AppColors.errorRed, size: 20),
                             padding: EdgeInsets.zero,
@@ -245,10 +243,8 @@ class CartScreen extends StatelessWidget {
                     children: [
                       const Text('Subtotal:',
                           style: TextStyle(color: AppColors.textGrey)),
-                      Text(
-                          '₹${cartService.totalPrice.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600)),
+                      Text('₹${cartService.totalPrice.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -269,8 +265,7 @@ class CartScreen extends StatelessWidget {
                     children: [
                       const Text('Total:',
                           style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold)),
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       Text(
                         '₹${cartService.totalPrice.toStringAsFixed(0)}',
                         style: const TextStyle(
@@ -296,8 +291,7 @@ class CartScreen extends StatelessWidget {
                       ),
                       child: const Text('Proceed to Checkout',
                           style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
+                              fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -308,4 +302,13 @@ class CartScreen extends StatelessWidget {
       },
     );
   }
+    String _getCompleteImageUrl(String relativeUrl) {
+      if (relativeUrl.startsWith('http')) {
+        // Already a complete URL
+        return relativeUrl;
+      } else {
+        // Prepend the base URL
+        return '${ApiService.baseUrl}$relativeUrl';
+      }
+    }
 }

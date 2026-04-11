@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../models/food_item.dart';
 import 'api_service.dart';
 
@@ -19,7 +20,7 @@ class MenuService extends ChangeNotifier {
 
     try {
       String url = '${ApiService.baseUrl}/menu';
-      
+
       // Build query parameters
       List<String> params = [];
       if (restaurantId != null && restaurantId.isNotEmpty) {
@@ -28,11 +29,11 @@ class MenuService extends ChangeNotifier {
       if (category != null && category.isNotEmpty) {
         params.add('category=$category');
       }
-      
+
       if (params.isNotEmpty) {
         url += '?' + params.join('&');
       }
-      
+
       print('🔍 Fetching menu items from: $url');
 
       final response = await _apiService.get(url);
@@ -43,7 +44,8 @@ class MenuService extends ChangeNotifier {
         items = (data)
             .map((item) => FoodItem.fromMap(item as Map<String, dynamic>))
             .toList();
-        print('✅ Loaded ${items.length} menu items for restaurant: $restaurantId');
+        print(
+            '✅ Loaded ${items.length} menu items for restaurant: $restaurantId');
       } else {
         print('⚠️ No response from menu API');
       }
@@ -101,7 +103,7 @@ class MenuService extends ChangeNotifier {
 
   // Add new menu item
   static Future<Map<String, dynamic>> addMenuItem(FoodItem item,
-      {File? imageFile}) async {
+      {XFile? imageFile}) async {
     try {
       String imageUrl = item.imageUrl;
 
@@ -132,7 +134,7 @@ class MenuService extends ChangeNotifier {
   }
 
   // Update menu item
-  static Future<bool> updateMenuItem(FoodItem item, {File? imageFile}) async {
+  static Future<bool> updateMenuItem(FoodItem item, {XFile? imageFile}) async {
     try {
       String imageUrl = item.imageUrl;
 
@@ -184,10 +186,74 @@ class MenuService extends ChangeNotifier {
     }
   }
 
-  // Upload image - you can use Cloudinary, AWS S3, or your preferred service
-  static Future<String> _uploadImage(File imageFile) async {
-    // TODO: Implement image upload to Cloudinary or other service
-    // For now, returning a placeholder
-    return 'https://via.placeholder.com/400';
+  // Upload image to backend
+  static Future<String> _uploadImage(XFile imageFile) async {
+    try {
+      final bytes = await imageFile.readAsBytes();
+      final fileName = imageFile.name;
+
+      // Get file extension
+      final extension = fileName.split('.').last.toLowerCase();
+      final mimeType = _getMimeType(extension);
+
+      print('   📤 Uploading file: $fileName (${bytes.length} bytes)');
+      print('   Extension: .$extension, MIME: $mimeType');
+
+      // Create multipart request to /menu/upload endpoint
+      final uri = Uri.parse('${ApiService.baseUrl}/menu/upload');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add headers
+      request.headers['Authorization'] =
+          'Bearer ${await ApiService.getAuthToken()}';
+      // Add file
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: fileName,
+          contentType: http.MediaType(
+            mimeType.split('/')[0],
+            mimeType.split('/')[1],
+          ),
+        ),
+      );
+
+      print('   Sending request to: ${uri.path}');
+
+      // Send request
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print('   Response status: ${response.statusCode}');
+      print('   Response body: $responseBody');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(responseBody);
+        final imageUrl = jsonResponse['imageUrl'] as String?;
+
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          print('   ✅ Upload successful: $imageUrl');
+          return imageUrl;
+        }
+      }
+
+      throw 'Upload failed: ${response.statusCode}';
+    } catch (e) {
+      print('   ❌ Image upload error: $e');
+      rethrow;
+    }
+  }
+
+  // Get MIME type from file extension
+  static String _getMimeType(String extension) {
+    final mimeTypes = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+    };
+    return mimeTypes[extension] ?? 'image/jpeg';
   }
 }

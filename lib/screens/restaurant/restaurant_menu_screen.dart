@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 import '../../services/menu_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/food_item.dart';
@@ -316,10 +318,11 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
     final descCtrl = TextEditingController(text: existing?.description ?? '');
     final priceCtrl = TextEditingController(
         text: existing != null ? existing.price.toStringAsFixed(0) : '');
-    final imageCtrl = TextEditingController(text: existing?.imageUrl ?? '');
     final catCtrl = TextEditingController(text: existing?.category ?? '');
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
+    XFile? selectedImage;
+    String? existingImageUrl = existing?.imageUrl;
 
     showDialog(
       context: context,
@@ -342,48 +345,111 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                   const SizedBox(height: 12),
                   _buildField(catCtrl, 'Category', Icons.category),
                   const SizedBox(height: 12),
-                  _buildField(imageCtrl, 'Image URL', Icons.image_outlined,
-                      required: false, onChanged: () => setDialogState(() {})),
-                  const SizedBox(height: 12),
-                  // Image Preview
-                  if (imageCtrl.text.trim().isNotEmpty)
-                    Container(
+
+                  // 📸 Image Selection Section
+                  const Text(
+                    'Item Image',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Image Preview or Upload Button
+                  GestureDetector(
+                    onTap: () async {
+                      final ImagePicker picker = ImagePicker();
+                      final XFile? image = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 80,
+                      );
+                      if (image != null) {
+                        setDialogState(() => selectedImage = image);
+                      }
+                    },
+                    child: Container(
+                      height: 150,
                       width: double.infinity,
-                      height: 100,
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.textGrey, width: 1),
-                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primaryOrange,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                         color: Colors.grey[50],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: CachedNetworkImage(
-                          imageUrl: imageCtrl.text.trim(),
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            color: Colors.red[50],
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.broken_image,
-                                      color: AppColors.errorRed),
-                                  SizedBox(height: 8),
-                                  Text('Invalid Image URL',
-                                      style: TextStyle(
-                                          color: AppColors.errorRed,
-                                          fontSize: 12)),
-                                ],
-                              ),
-                            ),
-                          ),
+                      child: selectedImage == null && existingImageUrl == null
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.image_outlined,
+                                  size: 48,
+                                  color: AppColors.primaryOrange,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Tap to select image',
+                                  style: TextStyle(
+                                    color: AppColors.primaryOrange,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : selectedImage != null
+                              ? FutureBuilder<Uint8List>(
+                                  future: selectedImage!.readAsBytes(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.memory(
+                                          snapshot.data!,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      );
+                                    }
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: existingImageUrl ?? '',
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  errorWidget: (_, __, ___) => Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.broken_image,
+                                          color: AppColors.errorRed),
+                                      SizedBox(height: 8),
+                                      Text('Invalid Image URL',
+                                          style: TextStyle(
+                                              color: AppColors.errorRed,
+                                              fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                    ),
+                  ),
+
+                  // Change/Remove button if image selected
+                  if (selectedImage != null || existingImageUrl != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedImage = null;
+                            existingImageUrl = null;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.errorRed,
                         ),
+                        child: const Text('Change Image'),
                       ),
                     ),
                 ],
@@ -406,7 +472,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                         name: nameCtrl.text.trim(),
                         description: descCtrl.text.trim(),
                         price: double.tryParse(priceCtrl.text) ?? 0,
-                        imageUrl: imageCtrl.text.trim(),
+                        imageUrl: existingImageUrl ?? '',
                         category: catCtrl.text.trim(),
                         restaurantId:
                             AuthService.currentUser?.restaurantId ?? '',
@@ -415,11 +481,17 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                       bool ok;
                       String? errorMsg;
                       if (existing == null) {
-                        final result = await MenuService.addMenuItem(item);
+                        final result = await MenuService.addMenuItem(
+                          item,
+                          imageFile: selectedImage,
+                        );
                         ok = result['success'] ?? false;
                         errorMsg = result['error'];
                       } else {
-                        ok = await MenuService.updateMenuItem(item);
+                        ok = await MenuService.updateMenuItem(
+                          item,
+                          imageFile: selectedImage,
+                        );
                       }
 
                       if (!context.mounted) return;
@@ -571,8 +643,8 @@ class _MenuItemCardState extends State<_MenuItemCard> {
                             color: Colors.grey[200],
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.restaurant,
-                              color: Colors.grey),
+                          child:
+                              const Icon(Icons.restaurant, color: Colors.grey),
                         ),
                 ),
                 if (!_isAvailable)

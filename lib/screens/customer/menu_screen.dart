@@ -5,6 +5,7 @@ import '../../models/food_item.dart';
 import '../../services/menu_service.dart';
 import '../../services/cart_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
 import 'login_screen.dart';
 
@@ -228,7 +229,7 @@ class _MenuScreenState extends State<MenuScreen> {
               borderRadius: BorderRadius.circular(12),
               child: item.imageUrl.isNotEmpty
                   ? CachedNetworkImage(
-                      imageUrl: item.imageUrl,
+                      imageUrl: _getCompleteImageUrl(item.imageUrl),
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
@@ -394,5 +395,15 @@ class _MenuScreenState extends State<MenuScreen> {
         ),
       ),
     );
+  }
+
+  // Helper method to construct complete image URL
+  String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.startsWith('http')) {
+      // Already a complete URL
+      return relativeUrl;
+    }
+    // Use server base URL (not /api) for static files
+    return '${ApiService.serverBaseUrl}$relativeUrl';
   }
 }
