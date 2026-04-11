@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/restaurant_service.dart';
+import '../../services/api_service.dart';
 import '../../models/restaurant.dart';
 import '../../utils/app_colors.dart';
 import 'shop_detail_screen.dart';
@@ -296,7 +297,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                 color: Colors.grey[300],
                 child: restaurant.imageUrl.isNotEmpty
                     ? Image.network(
-                        restaurant.imageUrl,
+                        _getCompleteImageUrl(restaurant.imageUrl),
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
@@ -394,6 +395,16 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
         ),
       ),
     );
+  }
+
+  // Helper method to construct complete image URL
+  String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.startsWith('http')) {
+      // Already a complete URL
+      return relativeUrl;
+    }
+    // Use server base URL (not /api) for static files
+    return '${ApiService.serverBaseUrl}$relativeUrl';
   }
 
   void _showFilterBottomSheet() {

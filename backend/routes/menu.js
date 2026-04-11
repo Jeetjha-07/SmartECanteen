@@ -31,10 +31,26 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) {
+    console.log(`\n📸 ========== FILE UPLOAD VALIDATION ==========`);
+    console.log(`Filename: ${file.originalname}`);
+    console.log(`File size: ${file.size} bytes`);
+    console.log(`MIME type received: "${file.mimetype}"`);
+    console.log(`Extension: ${path.extname(file.originalname)}`);
+    
+    // Check file extension - more lenient
+    const ext = path.extname(file.originalname).toLowerCase();
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    const extname = validExtensions.includes(ext);
+    
+    // Check MIME type - accept any image/* type
+    const mimetype = file.mimetype && file.mimetype.startsWith('image/');
+    
+    console.log(`Extension valid: ${extname} (${ext})`);
+    console.log(`MIME type valid: ${mimetype}`);
+    console.log(`========================================\n`);
+    
+    if (extname && mimetype) {
+      console.log(`✅ File validation passed!`);
       return cb(null, true);
     } else {
       cb(new Error('Only image files are allowed'));

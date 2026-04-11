@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
 import 'restaurant_orders_screen.dart';
 import 'restaurant_menu_screen.dart';
@@ -60,9 +63,31 @@ class _RestaurantHomeState extends State<RestaurantHome> {
 
   // Check if restaurant has registered their shop
   Future<void> _checkShopRegistration() async {
-    final user = AuthService.currentUser;
-    // If restaurantId is not set, shop is not registered yet
-    if (user != null && user.restaurantId == null) {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiService.baseUrl}/restaurants/owner/registration-status'),
+        headers: ApiService.getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final isRegistered = data['isRegistered'] as bool? ?? false;
+
+        if (!mounted) return;
+        setState(() => _shopRegistered = isRegistered);
+
+        print('📋 Shop Registration Status: $isRegistered');
+      } else {
+        // If error checking status, assume not registered for safety
+        if (!mounted) return;
+        setState(() => _shopRegistered = false);
+        print('⚠️ Error checking shop registration status');
+      }
+    } catch (e) {
+      print('❌ Error checking shop registration: $e');
+      // If error checking status, assume not registered for safety
+      if (!mounted) return;
       setState(() => _shopRegistered = false);
     }
   }

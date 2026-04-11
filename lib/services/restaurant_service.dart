@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'api_service.dart';
 import '../models/restaurant.dart';
 import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'dart:io' if (dart.library.html) 'dart:html' as html;
 
 class RestaurantService extends ChangeNotifier {
   List<Restaurant> restaurants = [];
@@ -173,15 +174,15 @@ class RestaurantService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Register shop (with image file upload)
+  // Register shop (with image file upload - web and mobile compatible)
   static Future<Map<String, dynamic>> registerShop({
     required String shopName,
     required String description,
-    required File imageFile,
+    required XFile imageFile,
   }) async {
     try {
       print('📝 Registering shop: $shopName');
-      print('📸 Image file: ${imageFile.path}');
+      print('📸 Image file: ${imageFile.name}');
 
       // Create multipart request
       var request = http.MultipartRequest(
@@ -189,9 +190,20 @@ class RestaurantService extends ChangeNotifier {
         Uri.parse('${ApiService.baseUrl}/restaurants/register'),
       );
 
+      print('🔗 API Endpoint: ${ApiService.baseUrl}/restaurants/register');
+
       // Add headers (including Authorization)
       final headers = ApiService.getHeaders();
       request.headers.addAll(headers);
+
+      print('📋 Request Headers:');
+      headers.forEach((key, value) {
+        if (key == 'Authorization') {
+          print('   $key: Bearer [REDACTED]');
+        } else {
+          print('   $key: $value');
+        }
+      });
 
       // Add form fields
       request.fields['restaurantName'] = shopName;
@@ -208,33 +220,88 @@ class RestaurantService extends ChangeNotifier {
       request.fields['isVerified'] = 'true';
       request.fields['isOpen'] = 'true';
 
-      // Add image file
+      print('📝 Form Fields:');
+      request.fields.forEach((key, value) {
+        print('   $key: $value');
+      });
+
+      // Add image file - platform independent
+      final bytes = await imageFile.readAsBytes();
+      final extension = imageFile.name.split('.').last.toLowerCase();
+
+      // Determine MIME type based on extension
+      String contentType = 'image/jpeg'; // default
+      if (extension == 'png')
+        contentType = 'image/png';
+      else if (extension == 'gif') contentType = 'image/gif';
+
       request.files.add(
-        await http.MultipartFile.fromPath('image', imageFile.path),
+        http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: imageFile.name,
+          contentType: http.MediaType('image', extension),
+        ),
       );
+      print(
+          '📸 Image added: ${imageFile.name} (${bytes.length} bytes, MIME: $contentType)');
 
       // Send request
+      print('⏳ Sending request...');
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
       print('Response status: ${response.statusCode}');
+      print('Response content-type: ${response.headers['content-type']}');
+      print('Response body length: ${responseBody.length}');
+
+      // Check if response is HTML (error page) instead of JSON
+      if (responseBody.trim().startsWith('<')) {
+        print('❌ ERROR: Server returned HTML instead of JSON');
+        print('Response preview: ${responseBody.substring(0, 200)}...');
+        return {
+          'success': false,
+          'error':
+              'Server error: Invalid response format. Check console logs for details.'
+        };
+      }
+
       print('Response body: $responseBody');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(responseBody);
-        print('✅ Shop registered successfully');
-        return {'success': true, 'restaurant': data['restaurant']};
+        try {
+          final data = jsonDecode(responseBody);
+          print('✅ Shop registered successfully');
+          return {'success': true, 'restaurant': data['restaurant']};
+        } catch (e) {
+          print('❌ JSON Parse Error: $e');
+          print('Response was: $responseBody');
+          return {
+            'success': false,
+            'error': 'Invalid response format from server: $e'
+          };
+        }
       } else {
-        final error = jsonDecode(responseBody);
-        print('❌ Error: ${error['error']}');
-        return {
-          'success': false,
-          'error': error['error'] ?? 'Failed to register shop'
-        };
+        try {
+          final error = jsonDecode(responseBody);
+          print('❌ Error: ${error['error']}');
+          return {
+            'success': false,
+            'error': error['error'] ?? 'Failed to register shop'
+          };
+        } catch (e) {
+          print('❌ JSON Parse Error on error response: $e');
+          return {
+            'success': false,
+            'error':
+                'Server error (Status ${response.statusCode}): ${responseBody.substring(0, 100)}'
+          };
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Error registering shop: $e');
-      return {'success': false, 'error': e.toString()};
+      print('📍 Stack trace: $stackTrace');
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
     }
   }
 }

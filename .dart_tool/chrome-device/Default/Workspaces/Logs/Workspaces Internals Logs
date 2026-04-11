@@ -1,0 +1,6 @@
+{"logTime": "0411/154720", {"lineNo":0,"logLevel":2,"message":"MaybeOrchestrateMigration: MaybeOrchestrateMigration","source":"Workspace Migration","timestamp":"2026-04-11T15:47:20.078Z"}}
+{"logTime": "0411/154720", {"lineNo":0,"logLevel":2,"message":"Migrate_FeatureCheck: Migrate_FeatureCheck","source":"Workspace Migration","timestamp":"2026-04-11T15:47:20.081Z"}}
+{"logTime": "0411/154720", {"lineNo":0,"logLevel":2,"message":"Migrate_MaybeHavePrefs: Migrate_MaybeHavePrefs","source":"Workspace Migration","timestamp":"2026-04-11T15:47:20.081Z"}}
+{"logTime": "0411/154720", {"lineNo":0,"logLevel":2,"message":"Migrate_Schedule: Migrate_Schedule","source":"Workspace Migration","timestamp":"2026-04-11T15:47:20.081Z"}}
+{"logTime": "0411/154720", {"lineNo":0,"logLevel":2,"message":"MaybeOrchestrateMigration: ~MaybeOrchestrateMigration","source":"Workspace Migration","timestamp":"2026-04-11T15:47:20.082Z"}}
+{"logTime": "0411/171130", {"lineNo":0,"logLevel":2,"message":"WorkspaceManager: count of workspaces on close: 0","source":"Fluid Local Collaborator","timestamp":"2026-04-11T17:11:30.904Z"}}

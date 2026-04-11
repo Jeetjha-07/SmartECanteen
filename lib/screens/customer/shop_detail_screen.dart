@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/menu_service.dart';
+import '../../services/api_service.dart';
 import '../../services/cart_service.dart';
 import '../../models/restaurant.dart';
 import '../../models/food_item.dart';
@@ -157,7 +158,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               color: Colors.grey[300],
               child: widget.restaurant.imageUrl.isNotEmpty
                   ? Image.network(
-                      widget.restaurant.imageUrl,
+                      _getCompleteImageUrl(widget.restaurant.imageUrl),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
@@ -215,6 +216,17 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     );
   }
 
+  // Helper method to construct complete image URL
+  // Helper method to construct complete image URL
+  String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.startsWith('http')) {
+      // Already a complete URL
+      return relativeUrl;
+    }
+    // Use server base URL (not /api) for static files
+    return '${ApiService.serverBaseUrl}$relativeUrl';
+  }
+
   Widget _buildMenuItemCard(FoodItem item) {
     return GestureDetector(
       onTap: () => _showItemDetails(item),
@@ -233,7 +245,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   width: 80,
                   color: Colors.grey[300],
                   child: item.imageUrl.isNotEmpty
-                      ? Image.network(item.imageUrl, fit: BoxFit.cover)
+                      ? Image.network(
+                          _getCompleteImageUrl(item.imageUrl),
+                          fit: BoxFit.cover,
+                        )
                       : const Icon(Icons.fastfood),
                 ),
               ),
@@ -379,7 +394,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                     width: double.infinity,
                     color: Colors.grey[300],
                     child: item.imageUrl.isNotEmpty
-                        ? Image.network(item.imageUrl, fit: BoxFit.cover)
+                        ? Image.network(
+                            _getCompleteImageUrl(item.imageUrl),
+                            fit: BoxFit.cover,
+                          )
                         : const Icon(Icons.fastfood, size: 80),
                   ),
                 ),

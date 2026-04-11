@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:typed_data';
 import '../../services/restaurant_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
@@ -19,7 +19,7 @@ class _RestaurantShopRegistrationScreenState
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  File? _selectedImageFile;
+  XFile? _selectedImageFile; // Changed from File? to XFile?
   bool _isSubmitting = false;
 
   @override
@@ -113,7 +113,7 @@ class _RestaurantShopRegistrationScreenState
                       imageQuality: 80,
                     );
                     if (image != null && mounted) {
-                      setState(() => _selectedImageFile = File(image.path));
+                      setState(() => _selectedImageFile = image);
                     }
                   },
                   child: Column(
@@ -146,7 +146,7 @@ class _RestaurantShopRegistrationScreenState
                       imageQuality: 80,
                     );
                     if (image != null && mounted) {
-                      setState(() => _selectedImageFile = File(image.path));
+                      setState(() => _selectedImageFile = image);
                     }
                   },
                   child: Column(
@@ -298,12 +298,6 @@ class _RestaurantShopRegistrationScreenState
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        image: _selectedImageFile != null
-                            ? DecorationImage(
-                                image: FileImage(_selectedImageFile!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
                         color: AppColors.backgroundColor,
                       ),
                       child: _selectedImageFile == null
@@ -325,7 +319,34 @@ class _RestaurantShopRegistrationScreenState
                                 ),
                               ],
                             )
-                          : null,
+                          : FutureBuilder<Uint8List>(
+                              future: _selectedImageFile!.readAsBytes(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return Image.memory(
+                                    snapshot.data!,
+                                    fit: BoxFit.cover,
+                                  );
+                                } else if (snapshot.hasError) {
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: AppColors.errorRed,
+                                        size: 48,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text('Error loading image'),
+                                    ],
+                                  );
+                                } else {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+                              },
+                            ),
                     ),
                   ),
                   if (_selectedImageFile != null) ...[

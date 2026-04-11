@@ -7,19 +7,17 @@ class ApiService {
   // Static JWT token storage
   static String? _jwtToken;
 
-  // 🎯 Backend hosted on Render (production)
-  static const String baseUrl = 'https://smartecanteen-1.onrender.com/api';
+  // 🎯 Local development backend
+  static const String baseUrl = 'http://localhost:3000/api';
 
-  // Local development (if needed - commented out)
-  // static String get baseUrl {
-  //   if (kIsWeb) {
-  //     return 'http://localhost:3000/api';
-  //   } else if (Platform.isAndroid) {
-  //     return 'http://10.0.2.2:3000/api';
-  //   } else {
-  //     return 'http://localhost:3000/api';
-  //   }
-  // }
+  // Base server URL for accessing static files (uploads, etc)
+  // Remove /api from the end to get the server root
+  static String get serverBaseUrl {
+    return baseUrl.replaceAll('/api', '');
+  }
+
+  // Production backend on Render (switch back when ready for deployment)
+  // static const String baseUrl = 'https://smartecanteen-1.onrender.com/api';
 
   /// Set JWT token (called after login/register)
   static void setToken(String token) {
