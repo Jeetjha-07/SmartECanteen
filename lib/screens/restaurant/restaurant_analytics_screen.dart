@@ -33,7 +33,7 @@ class _RestaurantAnalyticsScreenState extends State<RestaurantAnalyticsScreen> {
           Future.value({'error': 'Restaurant information not available'});
     } else {
       print('✅ Analytics Screen: Using restaurantId: ${user!.restaurantId}');
-      _analyticsData = AnalyticsService.getBasicAnalytics(user!.restaurantId!);
+      _analyticsData = AnalyticsService.getBasicAnalytics(user.restaurantId!);
     }
     setState(() {});
   }

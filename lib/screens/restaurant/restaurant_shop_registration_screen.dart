@@ -301,16 +301,16 @@ class _RestaurantShopRegistrationScreenState
                         color: AppColors.backgroundColor,
                       ),
                       child: _selectedImageFile == null
-                          ? Column(
+                          ? const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.image_outlined,
                                   size: 48,
                                   color: AppColors.primaryOrange,
                                 ),
-                                const SizedBox(height: 12),
-                                const Text(
+                                SizedBox(height: 12),
+                                Text(
                                   'Tap to upload image',
                                   style: TextStyle(
                                     color: AppColors.primaryOrange,
@@ -328,16 +328,16 @@ class _RestaurantShopRegistrationScreenState
                                     fit: BoxFit.cover,
                                   );
                                 } else if (snapshot.hasError) {
-                                  return Column(
+                                  return const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.error_outline,
                                         color: AppColors.errorRed,
                                         size: 48,
                                       ),
-                                      const SizedBox(height: 8),
-                                      const Text('Error loading image'),
+                                      SizedBox(height: 8),
+                                      Text('Error loading image'),
                                     ],
                                   );
                                 } else {

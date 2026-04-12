@@ -15,7 +15,7 @@ class CheckoutWithRazorpayExample extends StatefulWidget {
   final String customerEmail;
   final String customerPhone;
 
-  const CheckoutWithRazorpayExample({
+  const CheckoutWithRazorpayExample({super.key, 
     required this.orderId,
     required this.totalAmount,
     required this.customerName,
@@ -373,11 +373,11 @@ class _CheckoutWithRazorpayExampleState
                 color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 20, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  Icon(Icons.info_outline, size: 20, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Expanded(
                     child: Text(
                       'Your payment is secure and encrypted',
                       style: TextStyle(fontSize: 12, color: AppColors.textGrey),

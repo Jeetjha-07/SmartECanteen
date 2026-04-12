@@ -267,17 +267,19 @@ router.put('/owner/update', verifyJWT, upload.single('image'), async (req, res) 
 
     // Handle image upload if provided
     if (req.file) {
-      updates.imageUrl = `/uploads/${req.file.filename}`;
-      console.log(`📸 Restaurant image updated: ${updates.imageUrl}`);
+      // Upload to Cloudinary
+      console.log(`📤 Updating restaurant image to Cloudinary...`);
+      updates.imageUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'smartcanteen/restaurants',
+        `restaurant_${req.user.userId}_${Date.now()}`
+      );
+      console.log(`📸 Restaurant image updated to Cloudinary: ${updates.imageUrl}`);
       
-      // Delete old image if it exists and is not the placeholder
+      // Delete old image from Cloudinary if it exists
       const oldRestaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
-      if (oldRestaurant && oldRestaurant.imageUrl && !oldRestaurant.imageUrl.includes('placeholder')) {
-        const oldImagePath = path.join(__dirname, '../' + oldRestaurant.imageUrl);
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.error('Error deleting old image:', err);
-          else console.log('✅ Old image deleted');
-        });
+      if (oldRestaurant && oldRestaurant.imageUrl) {
+        await deleteFromCloudinary(oldRestaurant.imageUrl);
       }
     }
 

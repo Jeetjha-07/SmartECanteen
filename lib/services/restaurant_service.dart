@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'api_service.dart';
 import '../models/restaurant.dart';
 import 'dart:convert';
-import 'dart:io' if (dart.library.html) 'dart:html' as html;
 
 class RestaurantService extends ChangeNotifier {
   List<Restaurant> restaurants = [];
@@ -174,7 +173,59 @@ class RestaurantService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Register shop (with image file upload - web and mobile compatible)
+  // Upload image to backend (which uploads to Cloudinary)
+  static Future<String> _uploadImageToCloudinary(XFile imageFile) async {
+    try {
+      print('📤 Uploading image to Cloudinary via backend...');
+      print('   File: ${imageFile.name} (${await imageFile.length()} bytes)');
+
+      // Create multipart request to /restaurants/upload endpoint
+      final uri = Uri.parse('${ApiService.baseUrl}/restaurants/upload');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header
+      final headers = ApiService.getHeaders();
+      request.headers.addAll(headers);
+
+      // Add file
+      final bytes = await imageFile.readAsBytes();
+      final extension = imageFile.name.split('.').last.toLowerCase();
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: imageFile.name,
+          contentType: http.MediaType('image', extension),
+        ),
+      );
+
+      // Send request
+      print('⏳ Uploading to /restaurants/upload...');
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print('   Response status: ${response.statusCode}');
+      print('   Response body: $responseBody');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(responseBody);
+        final imageUrl = jsonResponse['imageUrl'] as String?;
+
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          print('   ✅ Image uploaded to Cloudinary: $imageUrl');
+          return imageUrl;
+        }
+      }
+
+      throw 'Upload failed: ${response.statusCode}';
+    } catch (e) {
+      print('   ❌ Image upload error: $e');
+      rethrow;
+    }
+  }
+
+  // Register shop (with image upload to Cloudinary)
   static Future<Map<String, dynamic>> registerShop({
     required String shopName,
     required String description,
@@ -184,7 +235,10 @@ class RestaurantService extends ChangeNotifier {
       print('📝 Registering shop: $shopName');
       print('📸 Image file: ${imageFile.name}');
 
-      // Create multipart request
+      // Step 1: Upload image to Cloudinary
+      String cloudinaryUrl = await _uploadImageToCloudinary(imageFile);
+
+      // Step 2: Create request to register endpoint
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('${ApiService.baseUrl}/restaurants/register'),
@@ -208,6 +262,7 @@ class RestaurantService extends ChangeNotifier {
       // Add form fields
       request.fields['restaurantName'] = shopName;
       request.fields['description'] = description;
+      request.fields['imageUrl'] = cloudinaryUrl; // Add Cloudinary URL
       request.fields['cuisineTypes'] = 'Multi-Cuisine';
       request.fields['address'] = 'To be updated';
       request.fields['phone'] = 'To be updated';
@@ -222,32 +277,15 @@ class RestaurantService extends ChangeNotifier {
 
       print('📝 Form Fields:');
       request.fields.forEach((key, value) {
-        print('   $key: $value');
+        if (key == 'imageUrl') {
+          print('   $key: $value (Cloudinary)');
+        } else {
+          print('   $key: $value');
+        }
       });
 
-      // Add image file - platform independent
-      final bytes = await imageFile.readAsBytes();
-      final extension = imageFile.name.split('.').last.toLowerCase();
-
-      // Determine MIME type based on extension
-      String contentType = 'image/jpeg'; // default
-      if (extension == 'png')
-        contentType = 'image/png';
-      else if (extension == 'gif') contentType = 'image/gif';
-
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',
-          bytes,
-          filename: imageFile.name,
-          contentType: http.MediaType('image', extension),
-        ),
-      );
-      print(
-          '📸 Image added: ${imageFile.name} (${bytes.length} bytes, MIME: $contentType)');
-
       // Send request
-      print('⏳ Sending request...');
+      print('⏳ Sending registration request...');
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 

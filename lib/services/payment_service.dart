@@ -1,7 +1,6 @@
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'api_service.dart';
 import 'dart:convert';
-import 'auth_service.dart';
 
 class PaymentService {
   static final Razorpay _razorpay = Razorpay();

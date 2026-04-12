@@ -3,3 +3,33 @@ backend/uploads/
 backend/node_modules/
 backend/.env
 .DS_Store
+
+# Flutter build and dependencies
+/build/
+/flutter_export_environment.sh
+.dart_tool/
+
+# Android
+/android/.gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+
+# iOS
+/ios/Pods/
+/ios/Podfile.lock
+
+# Web
+/web/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Misc
+*.log
+*.swp
+*.swo
+*~
+.env

@@ -378,16 +378,16 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                         color: Colors.grey[50],
                       ),
                       child: selectedImage == null && existingImageUrl == null
-                          ? Column(
+                          ? const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.image_outlined,
                                   size: 48,
                                   color: AppColors.primaryOrange,
                                 ),
-                                const SizedBox(height: 12),
-                                const Text(
+                                SizedBox(height: 12),
+                                Text(
                                   'Tap to select image',
                                   style: TextStyle(
                                     color: AppColors.primaryOrange,
@@ -420,9 +420,9 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                                   placeholder: (_, __) => const Center(
                                     child: CircularProgressIndicator(),
                                   ),
-                                  errorWidget: (_, __, ___) => Column(
+                                  errorWidget: (_, __, ___) => const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
+                                    children: [
                                       Icon(Icons.broken_image,
                                           color: AppColors.errorRed),
                                       SizedBox(height: 8),
@@ -756,9 +756,14 @@ class _MenuItemCardState extends State<_MenuItemCard> {
       return '';
     }
     if (relativeUrl.startsWith('http')) {
-      // Already a complete URL
+      // Already a complete URL (Cloudinary)
       print('✅ Using complete URL: $relativeUrl');
       return relativeUrl;
+    }
+    // Skip /uploads/ paths (they don't exist on Render's ephemeral filesystem)
+    if (relativeUrl.startsWith('/uploads')) {
+      print('⚠️ Skipping ephemeral /uploads/ path: $relativeUrl');
+      return ''; // Show placeholder instead
     }
     // Use server base URL (not /api) for static files
     final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';

@@ -8,7 +8,7 @@ class ApiService {
   static String? _jwtToken;
 
   // 🎯 Local development backend
-  static const String baseUrl = 'http://localhost:3000/api';
+  // static const String baseUrl = 'http://localhost:3000/api';
 
   // Base server URL for accessing static files (uploads, etc)
   // Remove /api from the end to get the server root
@@ -17,7 +17,7 @@ class ApiService {
   }
 
   // Production backend on Render (switch back when ready for deployment)
-  // static const String baseUrl = 'https://smartecanteen-1.onrender.com/api';
+  static const String baseUrl = 'https://smartecanteen-1.onrender.com/api';
 
   /// Set JWT token (called after login/register)
   static void setToken(String token) {
@@ -278,7 +278,7 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getRestaurantReviews(
       String restaurantId) async {
     // Use authenticated endpoint for restaurant app
-    final url = '$baseUrl/reviews/restaurant/my/reviews';
+    const url = '$baseUrl/reviews/restaurant/my/reviews';
     print('\n🔍 API: Fetching restaurant reviews (AUTHENTICATED)');
     print('   URL: $url');
     print('   restaurantId param (unused): $restaurantId');

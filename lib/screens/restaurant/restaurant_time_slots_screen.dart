@@ -86,7 +86,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                                         context: context,
                                         initialDate: _selectedDate,
                                         firstDate: DateTime.now()
-                                            .subtract(Duration(days: 0)),
+                                            .subtract(const Duration(days: 0)),
                                         lastDate: DateTime.now()
                                             .add(const Duration(days: 30)),
                                       );
@@ -920,15 +920,15 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        title: const Row(
           children: [
             Icon(
               Icons.delete_forever,
               color: AppColors.errorRed,
               size: 28,
             ),
-            const SizedBox(width: 12),
-            const Expanded(
+            SizedBox(width: 12),
+            Expanded(
               child: Text('Clear All Slots'),
             ),
           ],

@@ -64,12 +64,12 @@ class _RestaurantReviewsScreenState extends State<RestaurantReviewsScreen> {
           final reviews = snapshot.data ?? [];
 
           if (reviews.isEmpty) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+            return const SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.star_outline, size: 64, color: Colors.grey),
                     SizedBox(height: 12),
                     Text('No reviews yet',

@@ -124,20 +124,8 @@ class CartScreen extends StatelessWidget {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: CachedNetworkImage(
-                              imageUrl: _getCompleteImageUrl(
-                                  cartItem.foodItem.imageUrl),
-                              width: 65,
-                              height: 65,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(
-                                width: 65,
-                                height: 65,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.restaurant,
-                                    color: Colors.grey),
-                              ),
-                            ),
+                            child:
+                                _buildCartItemImage(cartItem.foodItem.imageUrl),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -302,19 +290,69 @@ class CartScreen extends StatelessWidget {
       },
     );
   }
-    String _getCompleteImageUrl(String relativeUrl) {
-      if (relativeUrl.isEmpty) {
-        print('⚠️ [Cart] Empty image URL received');
-        return '';
-      }
-      if (relativeUrl.startsWith('http')) {
-        // Already a complete URL
-        print('✅ [Cart] Using complete URL: $relativeUrl');
-        return relativeUrl;
-      }
-      // Use server base URL (not /api) for static files
-      final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
-      print('🖼️ [Cart] Building URL: $relativeUrl -> $completeUrl');
-      return completeUrl;
+
+  String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.isEmpty) {
+      print('⚠️ [Cart] Empty image URL received');
+      return '';
     }
+    if (relativeUrl.startsWith('http')) {
+      // Already a complete URL (Cloudinary)
+      print('✅ [Cart] Using complete URL: $relativeUrl');
+      return relativeUrl;
+    }
+    // Skip /uploads/ paths (they don't exist on Render's ephemeral filesystem)
+    if (relativeUrl.startsWith('/uploads')) {
+      print('⚠️ [Cart] Skipping ephemeral /uploads/ path: $relativeUrl');
+      return ''; // Show placeholder instead
+    }
+    // Use server base URL (not /api) for static files
+    final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
+    print('🖼️ [Cart] Building URL: $relativeUrl -> $completeUrl');
+    return completeUrl;
+  }
+
+  Widget _buildCartItemImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return Container(
+        width: 65,
+        height: 65,
+        color: Colors.grey[200],
+        child: const Icon(Icons.restaurant, color: Colors.grey),
+      );
+    }
+
+    final completeUrl = _getCompleteImageUrl(imageUrl);
+
+    if (completeUrl.isEmpty) {
+      return Container(
+        width: 65,
+        height: 65,
+        color: Colors.grey[200],
+        child: const Icon(Icons.restaurant, color: Colors.grey),
+      );
+    }
+
+    if (!completeUrl.startsWith('http')) {
+      return Container(
+        width: 65,
+        height: 65,
+        color: Colors.grey[200],
+        child: const Icon(Icons.restaurant, color: Colors.grey),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: completeUrl,
+      width: 65,
+      height: 65,
+      fit: BoxFit.cover,
+      errorWidget: (_, __, ___) => Container(
+        width: 65,
+        height: 65,
+        color: Colors.grey[200],
+        child: const Icon(Icons.restaurant, color: Colors.grey),
+      ),
+    );
+  }
 }

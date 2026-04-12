@@ -406,9 +406,14 @@ class _MenuScreenState extends State<MenuScreen> {
       return '';
     }
     if (relativeUrl.startsWith('http')) {
-      // Already a complete URL
+      // Already a complete URL (Cloudinary)
       print('✅ [Menu] Using complete URL: $relativeUrl');
       return relativeUrl;
+    }
+    // Skip /uploads/ paths (they don't exist on Render's ephemeral filesystem)
+    if (relativeUrl.startsWith('/uploads')) {
+      print('⚠️ [Menu] Skipping ephemeral /uploads/ path: $relativeUrl');
+      return ''; // Show placeholder instead
     }
     // Use server base URL (not /api) for static files
     final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';

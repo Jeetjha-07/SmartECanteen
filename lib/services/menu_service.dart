@@ -31,7 +31,7 @@ class MenuService extends ChangeNotifier {
       }
 
       if (params.isNotEmpty) {
-        url += '?' + params.join('&');
+        url += '?${params.join('&')}';
       }
 
       print('🔍 Fetching menu items from: $url');
@@ -209,7 +209,7 @@ class MenuService extends ChangeNotifier {
 
       // Add headers
       request.headers['Authorization'] =
-          'Bearer ${await ApiService.getAuthToken()}';
+          'Bearer ${ApiService.getAuthToken()}';
       // Add file
       request.files.add(
         http.MultipartFile.fromBytes(

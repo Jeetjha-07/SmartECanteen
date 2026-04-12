@@ -649,7 +649,7 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                     Expanded(
                       flex: 1,
                       child: DropdownButtonFormField<String>(
-                        value: _discountType,
+                        initialValue: _discountType,
                         decoration: InputDecoration(
                           labelText: 'Type',
                           filled: true,
@@ -659,14 +659,14 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        items: [
+                        items: const [
                           DropdownMenuItem(
                             value: 'percentage',
-                            child: const Text('% Discount'),
+                            child: Text('% Discount'),
                           ),
                           DropdownMenuItem(
                             value: 'fixed',
-                            child: const Text('₹ Fixed'),
+                            child: Text('₹ Fixed'),
                           ),
                         ],
                         onChanged: (v) {
@@ -771,7 +771,7 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                             context: context,
                             initialDate: _validFrom,
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(Duration(days: 365)),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
                           );
                           if (picked != null) {
                             setState(() => _validFrom = picked);
@@ -801,7 +801,7 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                             context: context,
                             initialDate: _validUntil,
                             firstDate: _validFrom,
-                            lastDate: DateTime.now().add(Duration(days: 365)),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
                           );
                           if (picked != null) {
                             setState(() => _validUntil = picked);
@@ -1092,7 +1092,7 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                           context: context,
                           initialDate: _validFrom,
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(Duration(days: 365)),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
                           setState(() => _validFrom = picked);
@@ -1122,7 +1122,7 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                           context: context,
                           initialDate: _validUntil,
                           firstDate: _validFrom,
-                          lastDate: DateTime.now().add(Duration(days: 365)),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
                           setState(() => _validUntil = picked);

@@ -203,7 +203,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Text(
+                              const Text(
                                 'Restaurants are registering and setting up their menus.\nCheck back soon!',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -298,18 +298,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                 height: 150,
                 width: double.infinity,
                 color: Colors.grey[300],
-                child: restaurant.imageUrl.isNotEmpty
-                    ? Image.network(
-                        _getCompleteImageUrl(restaurant.imageUrl),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.restaurant, size: 50),
-                          );
-                        },
-                      )
-                    : const Icon(Icons.restaurant, size: 50),
+                child: _buildRestaurantImage(restaurant.imageUrl),
               ),
             ),
             // Restaurant Info
@@ -363,7 +352,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                   // Delivery Info
                   Row(
                     children: [
-                      Icon(Icons.schedule,
+                      const Icon(Icons.schedule,
                           size: 14, color: AppColors.primaryOrange),
                       const SizedBox(width: 4),
                       Text(
@@ -371,7 +360,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                         style: const TextStyle(fontSize: 12),
                       ),
                       const SizedBox(width: 16),
-                      Icon(Icons.local_shipping,
+                      const Icon(Icons.local_shipping,
                           size: 14, color: AppColors.primaryOrange),
                       const SizedBox(width: 4),
                       Text(
@@ -407,14 +396,52 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
       return '';
     }
     if (relativeUrl.startsWith('http')) {
-      // Already a complete URL
+      // Already a complete URL (Cloudinary)
       print('✅ [ShopListing] Using complete URL: $relativeUrl');
       return relativeUrl;
+    }
+    // Skip /uploads/ paths (they don't exist on Render's ephemeral filesystem)
+    if (relativeUrl.startsWith('/uploads')) {
+      print('⚠️ [ShopListing] Skipping ephemeral /uploads/ path: $relativeUrl');
+      return ''; // Show placeholder instead
     }
     // Use server base URL (not /api) for static files
     final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
     print('🖼️ [ShopListing] Building URL: $relativeUrl -> $completeUrl');
     return completeUrl;
+  }
+
+  Widget _buildRestaurantImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      print('⚠️ [ShopListing] Empty image URL');
+      return const Icon(Icons.restaurant, size: 50);
+    }
+
+    final completeUrl = _getCompleteImageUrl(imageUrl);
+
+    // If URL is empty after processing, show placeholder
+    if (completeUrl.isEmpty) {
+      print('⚠️ [ShopListing] Image URL resolved to empty string');
+      return const Icon(Icons.restaurant, size: 50);
+    }
+
+    // Only load valid HTTP/HTTPS URLs
+    if (!completeUrl.startsWith('http')) {
+      print('⚠️ [ShopListing] Invalid image URL scheme: $completeUrl');
+      return const Icon(Icons.restaurant, size: 50);
+    }
+
+    return Image.network(
+      completeUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ [ShopListing] Image load error: $error');
+        return Container(
+          color: Colors.grey[300],
+          child: const Icon(Icons.restaurant, size: 50),
+        );
+      },
+    );
   }
 
   void _showFilterBottomSheet() {

@@ -158,18 +158,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               height: 200,
               width: double.infinity,
               color: Colors.grey[300],
-              child: widget.restaurant.imageUrl.isNotEmpty
-                  ? Image.network(
-                      _getCompleteImageUrl(widget.restaurant.imageUrl),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.restaurant, size: 80),
-                        );
-                      },
-                    )
-                  : const Icon(Icons.restaurant, size: 80),
+              child: _buildRestaurantImage(widget.restaurant.imageUrl),
             ),
           ),
           const SizedBox(height: 12),
@@ -187,7 +176,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               Text(
                   '${widget.restaurant.averageRating.toStringAsFixed(1)} (${widget.restaurant.totalRatings} ratings)'),
               const SizedBox(width: 16),
-              Icon(Icons.schedule, size: 16, color: AppColors.primaryOrange),
+              const Icon(Icons.schedule,
+                  size: 16, color: AppColors.primaryOrange),
               const SizedBox(width: 4),
               Text('${widget.restaurant.deliveryTime} mins'),
             ],
@@ -225,14 +215,79 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
       return '';
     }
     if (relativeUrl.startsWith('http')) {
-      // Already a complete URL
+      // Already a complete URL (Cloudinary)
       print('✅ [ShopDetail] Using complete URL: $relativeUrl');
       return relativeUrl;
+    }
+    // Skip /uploads/ paths (they don't exist on Render's ephemeral filesystem)
+    if (relativeUrl.startsWith('/uploads')) {
+      print('⚠️ [ShopDetail] Skipping ephemeral /uploads/ path: $relativeUrl');
+      return ''; // Show placeholder instead
     }
     // Use server base URL (not /api) for static files
     final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
     print('🖼️ [ShopDetail] Building URL: $relativeUrl -> $completeUrl');
     return completeUrl;
+  }
+
+  Widget _buildRestaurantImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      print('⚠️ [ShopDetail] Empty restaurant image URL');
+      return const Icon(Icons.restaurant, size: 80);
+    }
+
+    final completeUrl = _getCompleteImageUrl(imageUrl);
+
+    if (completeUrl.isEmpty) {
+      print('⚠️ [ShopDetail] Restaurant image URL resolved to empty string');
+      return const Icon(Icons.restaurant, size: 80);
+    }
+
+    if (!completeUrl.startsWith('http')) {
+      print(
+          '⚠️ [ShopDetail] Invalid restaurant image URL scheme: $completeUrl');
+      return const Icon(Icons.restaurant, size: 80);
+    }
+
+    return Image.network(
+      completeUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ [ShopDetail] Restaurant image load error: $error');
+        return Container(
+          color: Colors.grey[300],
+          child: const Icon(Icons.restaurant, size: 80),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuItemImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      print('⚠️ [ShopDetail] Empty menu item image URL');
+      return const Icon(Icons.fastfood);
+    }
+
+    final completeUrl = _getCompleteImageUrl(imageUrl);
+
+    if (completeUrl.isEmpty) {
+      print('⚠️ [ShopDetail] Menu item image URL resolved to empty string');
+      return const Icon(Icons.fastfood);
+    }
+
+    if (!completeUrl.startsWith('http')) {
+      print('⚠️ [ShopDetail] Invalid menu item image URL scheme: $completeUrl');
+      return const Icon(Icons.fastfood);
+    }
+
+    return Image.network(
+      completeUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ [ShopDetail] Menu item image load error: $error');
+        return const Icon(Icons.fastfood);
+      },
+    );
   }
 
   Widget _buildMenuItemCard(FoodItem item) {
@@ -252,12 +307,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   height: 80,
                   width: 80,
                   color: Colors.grey[300],
-                  child: item.imageUrl.isNotEmpty
-                      ? Image.network(
-                          _getCompleteImageUrl(item.imageUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : const Icon(Icons.fastfood),
+                  child: _buildMenuItemImage(item.imageUrl),
                 ),
               ),
               const SizedBox(width: 12),
@@ -401,12 +451,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                     height: 150,
                     width: double.infinity,
                     color: Colors.grey[300],
-                    child: item.imageUrl.isNotEmpty
-                        ? Image.network(
-                            _getCompleteImageUrl(item.imageUrl),
-                            fit: BoxFit.cover,
-                          )
-                        : const Icon(Icons.fastfood, size: 80),
+                    child: _buildMenuItemImage(item.imageUrl),
                   ),
                 ),
               ),

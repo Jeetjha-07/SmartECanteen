@@ -244,9 +244,14 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
     // Handle image upload
     let imageUrl = req.body.imageUrl || ''; // Check if imageUrl is in request body (from /menu/upload endpoint)
     if (req.file) {
-      // If file is uploaded directly to this endpoint, use it
-      imageUrl = `/uploads/${req.file.filename}`;
-      console.log(`📸 Menu item image uploaded: ${imageUrl}`);
+      // If file is uploaded directly to this endpoint, upload to Cloudinary
+      console.log(`📤 Uploading file directly to Cloudinary...`);
+      imageUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'smartcanteen/menu',
+        `menu_${restaurantId}_${Date.now()}`
+      );
+      console.log(`📸 Menu item image uploaded to Cloudinary: ${imageUrl}`);
     } else if (imageUrl) {
       // If imageUrl is in body (from /menu/upload), use it
       console.log(`📸 Using image URL from body: ${imageUrl}`);
@@ -344,18 +349,24 @@ router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
 
     // Handle image upload if provided
     if (req.file) {
-      updateData.imageUrl = `/uploads/${req.file.filename}`;
-      console.log(`📸 Menu item image updated (new file): ${updateData.imageUrl}`);
+      // If file is uploaded directly to this endpoint, upload to Cloudinary
+      console.log(`📤 Updating: Uploading file directly to Cloudinary...`);
+      updateData.imageUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'smartcanteen/menu',
+        `menu_${restaurantId}_${Date.now()}`
+      );
+      console.log(`📸 Menu item image updated to Cloudinary: ${updateData.imageUrl}`);
       
-      // Delete old image if it exists
-      deleteImageFile(existingItem.imageUrl);
+      // Delete old image from Cloudinary if it exists
+      await deleteFromCloudinary(existingItem.imageUrl);
     } else if (req.body.imageUrl && req.body.imageUrl !== existingItem.imageUrl) {
       // If imageUrl is in body (from /menu/upload), use it
       updateData.imageUrl = req.body.imageUrl;
       console.log(`📸 Menu item image updated (from body): ${updateData.imageUrl}`);
       
-      // Delete old image if it exists
-      deleteImageFile(existingItem.imageUrl);
+      // Delete old image from Cloudinary if it exists
+      await deleteFromCloudinary(existingItem.imageUrl);
     }
     
     const item = await MenuItem.findByIdAndUpdate(
@@ -403,10 +414,10 @@ router.delete('/:id', verifyJWT, async (req, res) => {
       });
     }
 
-    // Delete image file before deleting the database record
+    // Delete image from Cloudinary before deleting the database record
     if (item.imageUrl) {
-      console.log(`🗑️  Deleting image for menu item: ${item.name}`);
-      deleteImageFile(item.imageUrl);
+      console.log(`🗑️  Deleting image from Cloudinary: ${item.name}`);
+      await deleteFromCloudinary(item.imageUrl);
     }
 
     await MenuItem.findByIdAndDelete(req.params.id);

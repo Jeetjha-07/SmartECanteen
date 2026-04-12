@@ -145,11 +145,11 @@ class _CouponApplicationScreenState extends State<CouponApplicationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.green),
-                          const SizedBox(width: 8),
-                          const Text('Coupon Applied Successfully',
+                          Icon(Icons.check_circle, color: Colors.green),
+                          SizedBox(width: 8),
+                          Text('Coupon Applied Successfully',
                               style: TextStyle(
                                   color: Colors.green,
                                   fontWeight: FontWeight.bold)),

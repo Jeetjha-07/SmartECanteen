@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2000),
     );
 
-    // Logo fade and scale animation
+    // App name fade and scale animation
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
@@ -90,9 +90,9 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.primaryOrange,
-              AppColors.primaryOrange.withOpacity(0.85),
-              AppColors.primaryOrange.withOpacity(0.7),
+              const Color(0xFFE53935), // Red from logo
+              const Color(0xFFE74C3C), // Red-orange
+              const Color(0xFFFF7043), // Orange
             ],
           ),
         ),
@@ -103,17 +103,17 @@ class _SplashScreenState extends State<SplashScreen>
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo with animation
+                  // White icon box with fork and knife
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: ScaleTransition(
                       scale: _scaleAnimation,
                       child: Container(
-                        width: 120,
-                        height: 120,
+                        width: 140,
+                        height: 140,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(35),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.3),
@@ -124,49 +124,52 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         child: const Icon(
                           Icons.restaurant,
-                          size: 70,
+                          size: 80,
                           color: AppColors.primaryOrange,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 50),
 
-                  // App name with slide animation
-                  Transform.translate(
-                    offset: Offset(0, _slideAnimation.value),
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: const Text(
+                  // App name with scale and fade animation
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Text(
                         'SmartECanteen',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 40,
+                          fontSize: 48,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
+                          fontFamily: 'Roboto',
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
 
-                  // Tagline
+                  // Tagline with slide animation
                   Transform.translate(
                     offset: Offset(0, _slideAnimation.value),
                     child: FadeTransition(
                       opacity: _fadeAnimation,
-                      child: const Text(
-                        'Khanna mast life jabardast',
+                      child: Text(
+                        'Khana Mast Life Jabardast',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 0.8,
                           fontStyle: FontStyle.italic,
+                          fontFamily: 'Roboto',
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 80),
 
                   // Loading indicator
                   FadeTransition(
