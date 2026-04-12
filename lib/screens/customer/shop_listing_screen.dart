@@ -399,12 +399,19 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
 
   // Helper method to construct complete image URL
   String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.isEmpty) {
+      print('⚠️ [ShopListing] Empty image URL received');
+      return '';
+    }
     if (relativeUrl.startsWith('http')) {
       // Already a complete URL
+      print('✅ [ShopListing] Using complete URL: $relativeUrl');
       return relativeUrl;
     }
     // Use server base URL (not /api) for static files
-    return '${ApiService.serverBaseUrl}$relativeUrl';
+    final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
+    print('🖼️ [ShopListing] Building URL: $relativeUrl -> $completeUrl');
+    return completeUrl;
   }
 
   void _showFilterBottomSheet() {

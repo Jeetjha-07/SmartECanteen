@@ -200,13 +200,17 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
     }
     
     // Handle image upload
-    let imageUrl = '';
+    let imageUrl = req.body.imageUrl || ''; // Check if imageUrl is in request body (from /menu/upload endpoint)
     if (req.file) {
+      // If file is uploaded directly to this endpoint, use it
       imageUrl = `/uploads/${req.file.filename}`;
       console.log(`📸 Menu item image uploaded: ${imageUrl}`);
+    } else if (imageUrl) {
+      // If imageUrl is in body (from /menu/upload), use it
+      console.log(`📸 Using image URL from body: ${imageUrl}`);
     }
     
-    console.log('📝 Creating menu item:', { name, price, category, restaurantId });
+    console.log('📝 Creating menu item:', { name, price, category, restaurantId, imageUrl });
     
     const item = await MenuItem.create({
       name: name.trim(),
@@ -300,6 +304,19 @@ router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
     if (req.file) {
       updateData.imageUrl = `/uploads/${req.file.filename}`;
       console.log(`📸 Menu item image updated: ${updateData.imageUrl}`);
+      
+      // Delete old image if it exists
+      if (existingItem.imageUrl && !existingItem.imageUrl.includes('placeholder')) {
+        const oldImagePath = path.join(__dirname, '../' + existingItem.imageUrl);
+        fs.unlink(oldImagePath, (err) => {
+          if (err) console.error('Error deleting old image:', err);
+          else console.log('✅ Old image deleted');
+        });
+      }
+    } else if (req.body.imageUrl && req.body.imageUrl !== existingItem.imageUrl) {
+      // If imageUrl is in body (from /menu/upload), use it
+      updateData.imageUrl = req.body.imageUrl;
+      console.log(`📸 Menu item image updated from body: ${updateData.imageUrl}`);
       
       // Delete old image if it exists
       if (existingItem.imageUrl && !existingItem.imageUrl.includes('placeholder')) {

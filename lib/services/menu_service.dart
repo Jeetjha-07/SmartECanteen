@@ -46,6 +46,9 @@ class MenuService extends ChangeNotifier {
             .toList();
         print(
             '✅ Loaded ${items.length} menu items for restaurant: $restaurantId');
+        for (var item in items) {
+          print('   📌 Item: ${item.name}, ImageURL: ${item.imageUrl}');
+        }
       } else {
         print('⚠️ No response from menu API');
       }
@@ -126,6 +129,7 @@ class MenuService extends ChangeNotifier {
       print('   Sending to backend with URL: $imageUrl');
       final result = await ApiService.createMenuItem(itemData);
       print('✅ Menu item added: ${result['item']?['_id'] ?? 'Unknown'}');
+      print('   Stored imageUrl in DB: ${result['item']?['imageUrl'] ?? 'NOT SET'}');
       return result;
     } catch (e) {
       print('❌ Error adding menu item: $e');

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import '../../services/menu_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 import '../../models/food_item.dart';
 import '../../utils/app_colors.dart';
 import 'restaurant_shop_registration_screen.dart';
@@ -617,7 +618,7 @@ class _MenuItemCardState extends State<_MenuItemCard> {
                   borderRadius: BorderRadius.circular(10),
                   child: widget.item.imageUrl.isNotEmpty
                       ? CachedNetworkImage(
-                          imageUrl: widget.item.imageUrl,
+                          imageUrl: _getCompleteImageUrl(widget.item.imageUrl),
                           width: 70,
                           height: 70,
                           fit: BoxFit.cover,
@@ -746,5 +747,22 @@ class _MenuItemCardState extends State<_MenuItemCard> {
         ),
       ),
     );
+  }
+
+  // Helper method to construct complete image URL
+  String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.isEmpty) {
+      print('⚠️ Image URL is empty for item');
+      return '';
+    }
+    if (relativeUrl.startsWith('http')) {
+      // Already a complete URL
+      print('✅ Using complete URL: $relativeUrl');
+      return relativeUrl;
+    }
+    // Use server base URL (not /api) for static files
+    final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
+    print('🖼️ Building complete URL: $relativeUrl -> $completeUrl');
+    return completeUrl;
   }
 }

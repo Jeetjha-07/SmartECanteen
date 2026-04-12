@@ -303,12 +303,18 @@ class CartScreen extends StatelessWidget {
     );
   }
     String _getCompleteImageUrl(String relativeUrl) {
+      if (relativeUrl.isEmpty) {
+        print('⚠️ [Cart] Empty image URL received');
+        return '';
+      }
       if (relativeUrl.startsWith('http')) {
         // Already a complete URL
+        print('✅ [Cart] Using complete URL: $relativeUrl');
         return relativeUrl;
-      } else {
-        // Prepend the base URL
-        return '${ApiService.baseUrl}$relativeUrl';
       }
+      // Use server base URL (not /api) for static files
+      final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
+      print('🖼️ [Cart] Building URL: $relativeUrl -> $completeUrl');
+      return completeUrl;
     }
 }

@@ -217,14 +217,20 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
   }
 
   // Helper method to construct complete image URL
-  // Helper method to construct complete image URL
   String _getCompleteImageUrl(String relativeUrl) {
+    if (relativeUrl.isEmpty) {
+      print('⚠️ [ShopDetail] Empty image URL received');
+      return '';
+    }
     if (relativeUrl.startsWith('http')) {
       // Already a complete URL
+      print('✅ [ShopDetail] Using complete URL: $relativeUrl');
       return relativeUrl;
     }
     // Use server base URL (not /api) for static files
-    return '${ApiService.serverBaseUrl}$relativeUrl';
+    final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
+    print('🖼️ [ShopDetail] Building URL: $relativeUrl -> $completeUrl');
+    return completeUrl;
   }
 
   Widget _buildMenuItemCard(FoodItem item) {
