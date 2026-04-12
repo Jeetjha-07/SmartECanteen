@@ -7,6 +7,7 @@ const MenuItem = require('../models/MenuItem');
 const Restaurant = require('../models/Restaurant');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
 
 const router = express.Router();
 
@@ -489,13 +490,22 @@ router.post('/upload', verifyJWT, upload.single('image'), async (req, res) => {
       });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
-    console.log(`📸 Menu item image uploaded: ${imageUrl}`);
+    console.log(`📤 Uploading menu item image to Cloudinary...`);
+    console.log(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
+
+    // Upload to Cloudinary
+    const cloudinaryUrl = await uploadToCloudinary(
+      req.file.buffer,
+      'smartcanteen/menu',
+      `menu_${user.userId}_${Date.now()}`
+    );
+
+    console.log(`✅ Menu item image uploaded to Cloudinary: ${cloudinaryUrl}`);
 
     res.json({
       success: true,
-      imageUrl: imageUrl,
-      message: 'Image uploaded successfully'
+      imageUrl: cloudinaryUrl,
+      message: 'Image uploaded successfully to Cloudinary'
     });
   } catch (error) {
     if (req.file) {
@@ -503,6 +513,7 @@ router.post('/upload', verifyJWT, upload.single('image'), async (req, res) => {
         if (err) console.error('Error deleting file:', err);
       });
     }
+    console.error('❌ Menu upload error:', error);
     res.status(500).json({ error: error.message });
   }
 });
