@@ -1,5 +1,7 @@
 import 'order_service.dart';
 import 'review_service.dart';
+import 'api_service.dart';
+import 'dart:convert';
 
 class AnalyticsService {
   /// Get basic analytics for a specific restaurant
@@ -96,6 +98,122 @@ class AnalyticsService {
     } catch (e) {
       print('❌ Error fetching analytics: $e');
       return {};
+    }
+  }
+
+  /// Get ML Sales Predictions for next 7 days
+  static Future<List<dynamic>> getSalesPredictions(String restaurantId) async {
+    try {
+      print('🤖 Fetching sales predictions for: $restaurantId');
+      final response = await ApiService().get(
+        '${ApiService.baseUrl}/analytics/predictions/sales?restaurantId=$restaurantId',
+      );
+
+      if (response != null) {
+        final data =
+            response is String ? jsonDecode(response) : response;
+        
+        if (data is Map && data['data'] != null) {
+          return List<dynamic>.from(data['data'] as List);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error fetching sales predictions: $e');
+      return [];
+    }
+  }
+
+  /// Get ML Revenue Predictions for next 7 days
+  static Future<List<dynamic>> getRevenuePredictions(String restaurantId) async {
+    try {
+      print('🤖 Fetching revenue predictions for: $restaurantId');
+      final response = await ApiService().get(
+        '${ApiService.baseUrl}/analytics/predictions/revenue?restaurantId=$restaurantId',
+      );
+
+      if (response != null) {
+        final data =
+            response is String ? jsonDecode(response) : response;
+        
+        if (data is Map && data['data'] != null) {
+          return List<dynamic>.from(data['data'] as List);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error fetching revenue predictions: $e');
+      return [];
+    }
+  }
+
+  /// Get AI-powered recommendations to boost sales
+  static Future<List<dynamic>> getSalesBoostRecommendations(
+      String restaurantId) async {
+    try {
+      print('💡 Fetching sales boost recommendations for: $restaurantId');
+      final response = await ApiService().get(
+        '${ApiService.baseUrl}/analytics/recommendations?restaurantId=$restaurantId',
+      );
+
+      if (response != null) {
+        final data =
+            response is String ? jsonDecode(response) : response;
+        
+        if (data is Map && data['data'] != null) {
+          return List<dynamic>.from(data['data'] as List);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error fetching recommendations: $e');
+      return [];
+    }
+  }
+
+  /// Get top-performing items
+  static Future<List<dynamic>> getTopItems(String restaurantId) async {
+    try {
+      print('⭐ Fetching top items for: $restaurantId');
+      final response = await ApiService().get(
+        '${ApiService.baseUrl}/analytics/top-items?restaurantId=$restaurantId&days=30&limit=5',
+      );
+
+      if (response != null) {
+        final data =
+            response is String ? jsonDecode(response) : response;
+        
+        if (data is Map && data['data'] != null) {
+          return List<dynamic>.from(data['data'] as List);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error fetching top items: $e');
+      return [];
+    }
+  }
+
+  /// Get low-performing items
+  static Future<List<dynamic>> getLowItems(String restaurantId) async {
+    try {
+      print('📉 Fetching low items for: $restaurantId');
+      final response = await ApiService().get(
+        '${ApiService.baseUrl}/analytics/low-items?restaurantId=$restaurantId&days=30&limit=5',
+      );
+
+      if (response != null) {
+        final data =
+            response is String ? jsonDecode(response) : response;
+        
+        if (data is Map && data['data'] != null) {
+          return List<dynamic>.from(data['data'] as List);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error fetching low items: $e');
+      return [];
     }
   }
 

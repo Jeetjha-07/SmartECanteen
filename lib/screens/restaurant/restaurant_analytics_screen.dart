@@ -127,6 +127,48 @@ class _RestaurantAnalyticsScreenState extends State<RestaurantAnalyticsScreen> {
                 const SizedBox(height: 12),
                 _QuickStats(data: data),
                 const SizedBox(height: 30),
+
+                // ML Model Predictions Section
+                const Text('ML Sales Forecast',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text('AI-powered predictions for next 7 days',
+                    style:
+                        TextStyle(fontSize: 12, color: AppColors.textGrey)),
+                const SizedBox(height: 12),
+                _SalesForecastCard(restaurantId: data['restaurantId'] ?? AuthService.currentUser?.restaurantId ?? ''),
+                const SizedBox(height: 12),
+                _RevenueForcastCard(restaurantId: data['restaurantId'] ?? AuthService.currentUser?.restaurantId ?? ''),
+                const SizedBox(height: 30),
+
+                // AI Sales Boost Recommendations
+                const Text('Boost Your Sales',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text('AI-powered strategies to increase revenue',
+                    style:
+                        TextStyle(fontSize: 12, color: AppColors.textGrey)),
+                const SizedBox(height: 12),
+                _SalesBoostRecommendations(restaurantId: data['restaurantId'] ?? AuthService.currentUser?.restaurantId ?? ''),
+                const SizedBox(height: 30),
+
+                // Top & Low Performing Items
+                const Text('Performance Analysis',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TopItemsCard(restaurantId: data['restaurantId'] ?? AuthService.currentUser?.restaurantId ?? ''),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _LowItemsCard(restaurantId: data['restaurantId'] ?? AuthService.currentUser?.restaurantId ?? ''),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
               ],
             ),
           );
@@ -377,6 +419,655 @@ class _StatRow extends StatelessWidget {
         Text(value,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       ],
+    );
+  }
+}
+
+// ML Predictions & Recommendations Widgets
+
+class _SalesForecastCard extends StatelessWidget {
+  final String restaurantId;
+
+  const _SalesForecastCard({required this.restaurantId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: AnalyticsService.getSalesPredictions(restaurantId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: const SizedBox(
+              height: 60,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        final predictions = snapshot.data ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryOrange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.trending_up,
+                        color: AppColors.primaryOrange, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sales Forecast (7 Days)',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Next week predictions',
+                          style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (predictions.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text('No data available yet',
+                        style: TextStyle(color: AppColors.textGrey)),
+                  ),
+                )
+              else
+                Column(
+                  children: predictions.take(3).map<Widget>((pred) {
+                    final date = pred['date'] ?? 'Date';
+                    final sales = pred['expectedSales'] ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(date.toString().substring(0, 10),
+                              style: const TextStyle(fontSize: 12)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryOrange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('~$sales orders',
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryOrange)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RevenueForcastCard extends StatelessWidget {
+  final String restaurantId;
+
+  const _RevenueForcastCard({required this.restaurantId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: AnalyticsService.getRevenuePredictions(restaurantId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: const SizedBox(
+              height: 60,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        final predictions = snapshot.data ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.successGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.attach_money,
+                        color: AppColors.successGreen, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Revenue Forecast (7 Days)',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Expected revenue predictions',
+                          style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (predictions.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text('No data available yet',
+                        style: TextStyle(color: AppColors.textGrey)),
+                  ),
+                )
+              else
+                Column(
+                  children: predictions.take(3).map<Widget>((pred) {
+                    final date = pred['date'] ?? 'Date';
+                    final revenue = pred['expectedRevenue'] ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(date.toString().substring(0, 10),
+                              style: const TextStyle(fontSize: 12)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.successGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('₹${revenue.toString()}',
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.successGreen)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SalesBoostRecommendations extends StatelessWidget {
+  final String restaurantId;
+
+  const _SalesBoostRecommendations({required this.restaurantId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: AnalyticsService.getSalesBoostRecommendations(restaurantId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: const SizedBox(
+              height: 60,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        final recommendations = snapshot.data ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.purple.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.lightbulb_outline,
+                        color: Colors.purple, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('AI Sales Boosters',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Smart strategies to increase sales',
+                          style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (recommendations.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text('No recommendations available yet',
+                        style: TextStyle(color: AppColors.textGrey)),
+                  ),
+                )
+              else
+                Column(
+                  children: recommendations.map<Widget>((rec) {
+                    final title = rec['title'] ?? 'Recommendation';
+                    final description = rec['description'] ?? '';
+                    final actionType = rec['actionType'] ?? 'default';
+                    final impact = rec['estimatedImpact'] ?? 'High';
+                    
+                    IconData iconData = Icons.lightbulb;
+                    Color iconColor = Colors.purple;
+                    
+                    if (actionType == 'coupon') {
+                      iconData = Icons.discount;
+                      iconColor = Colors.orange;
+                    } else if (actionType == 'promotion') {
+                      iconData = Icons.campaign;
+                      iconColor = Colors.red;
+                    } else if (actionType == 'item') {
+                      iconData = Icons.fastfood;
+                      iconColor = AppColors.primaryOrange;
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: iconColor.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: iconColor.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Icon(iconData, size: 18, color: iconColor),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(title,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: impact == 'High'
+                                        ? Colors.red.withOpacity(0.1)
+                                        : Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(impact,
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: impact == 'High'
+                                              ? Colors.red
+                                              : Colors.orange)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(description,
+                                style: const TextStyle(fontSize: 11, color: AppColors.textGrey),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TopItemsCard extends StatelessWidget {
+  final String restaurantId;
+
+  const _TopItemsCard({required this.restaurantId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: AnalyticsService.getTopItems(restaurantId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: const SizedBox(
+              height: 60,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        final items = snapshot.data ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.successGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.trending_up,
+                        color: AppColors.successGreen, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Top Items',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text('Best sellers',
+                            style: TextStyle(fontSize: 9, color: AppColors.textGrey)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (items.isEmpty)
+                const Center(
+                  child: Text('No data',
+                      style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                )
+              else
+                Column(
+                  children: items.take(3).map<Widget>((item) {
+                    final name = item['name'] ?? 'Item';
+                    final orders = item['totalOrders'] ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(name,
+                                style: const TextStyle(fontSize: 10),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                          Text('$orders',
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.successGreen)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LowItemsCard extends StatelessWidget {
+  final String restaurantId;
+
+  const _LowItemsCard({required this.restaurantId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: AnalyticsService.getLowItems(restaurantId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: const SizedBox(
+              height: 60,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        final items = snapshot.data ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorRed.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.trending_down,
+                        color: AppColors.errorRed, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Low Performers',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text('Need boost',
+                            style: TextStyle(fontSize: 9, color: AppColors.textGrey)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (items.isEmpty)
+                const Center(
+                  child: Text('No data',
+                      style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                )
+              else
+                Column(
+                  children: items.take(3).map<Widget>((item) {
+                    final name = item['name'] ?? 'Item';
+                    final orders = item['totalOrders'] ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(name,
+                                style: const TextStyle(fontSize: 10),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                          Text('$orders',
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.errorRed)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
