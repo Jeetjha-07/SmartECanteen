@@ -16,6 +16,47 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Helper function to delete old image file
+const deleteImageFile = (imageUrl) => {
+  if (!imageUrl) return;
+  
+  // Don't try to delete URLs that are not local files or placeholders
+  if (imageUrl.startsWith('http') || imageUrl.includes('placeholder')) {
+    return;
+  }
+
+  try {
+    // Construct proper file path
+    // imageUrl is like: "/uploads/1234567890-randomNumber.jpg"
+    const filename = path.basename(imageUrl); // Extract filename
+    const filePath = path.join(uploadsDir, filename);
+
+    // Security check: ensure file is in uploads directory
+    const realPath = path.resolve(filePath);
+    const realUploadsDir = path.resolve(uploadsDir);
+    
+    if (!realPath.startsWith(realUploadsDir)) {
+      console.error(`⚠️  Security warning: Attempted to delete file outside uploads directory: ${filePath}`);
+      return;
+    }
+
+    // Check if file exists before deleting
+    if (fs.existsSync(filePath)) {
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(`❌ Error deleting image file ${filePath}:`, err.message);
+        } else {
+          console.log(`✅ Successfully deleted old image: ${filename}`);
+        }
+      });
+    } else {
+      console.warn(`⚠️  Image file not found for deletion: ${filePath}`);
+    }
+  } catch (error) {
+    console.error(`⚠️  Error in deleteImageFile:`, error.message);
+  }
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
@@ -303,29 +344,17 @@ router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
     // Handle image upload if provided
     if (req.file) {
       updateData.imageUrl = `/uploads/${req.file.filename}`;
-      console.log(`📸 Menu item image updated: ${updateData.imageUrl}`);
+      console.log(`📸 Menu item image updated (new file): ${updateData.imageUrl}`);
       
       // Delete old image if it exists
-      if (existingItem.imageUrl && !existingItem.imageUrl.includes('placeholder')) {
-        const oldImagePath = path.join(__dirname, '../' + existingItem.imageUrl);
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.error('Error deleting old image:', err);
-          else console.log('✅ Old image deleted');
-        });
-      }
+      deleteImageFile(existingItem.imageUrl);
     } else if (req.body.imageUrl && req.body.imageUrl !== existingItem.imageUrl) {
       // If imageUrl is in body (from /menu/upload), use it
       updateData.imageUrl = req.body.imageUrl;
-      console.log(`📸 Menu item image updated from body: ${updateData.imageUrl}`);
+      console.log(`📸 Menu item image updated (from body): ${updateData.imageUrl}`);
       
       // Delete old image if it exists
-      if (existingItem.imageUrl && !existingItem.imageUrl.includes('placeholder')) {
-        const oldImagePath = path.join(__dirname, '../' + existingItem.imageUrl);
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.error('Error deleting old image:', err);
-          else console.log('✅ Old image deleted');
-        });
-      }
+      deleteImageFile(existingItem.imageUrl);
     }
     
     const item = await MenuItem.findByIdAndUpdate(
@@ -371,6 +400,12 @@ router.delete('/:id', verifyJWT, async (req, res) => {
       return res.status(400).json({ 
         error: 'Shop must be registered first before modifying menu items. Please complete shop registration.' 
       });
+    }
+
+    // Delete image file before deleting the database record
+    if (item.imageUrl) {
+      console.log(`🗑️  Deleting image for menu item: ${item.name}`);
+      deleteImageFile(item.imageUrl);
     }
 
     await MenuItem.findByIdAndDelete(req.params.id);

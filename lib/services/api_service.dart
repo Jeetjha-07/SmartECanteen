@@ -116,6 +116,10 @@ class ApiService {
     return await _makeRequest('PUT', url, body: body);
   }
 
+  Future<dynamic> patch(String url, {dynamic body}) async {
+    return await _makeRequest('PATCH', url, body: body);
+  }
+
   Future<dynamic> delete(String url) async {
     return await _makeRequest('DELETE', url);
   }

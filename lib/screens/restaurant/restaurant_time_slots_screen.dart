@@ -296,14 +296,92 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Today\'s Time Slots',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        // Header with title and status
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Today\'s Time Slots',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Status Badge
+                                  if (timeSlotService.timeSlots.isNotEmpty)
+                                    _buildStatusBadge(timeSlotService),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+
+                        // Action Buttons
+                        if (timeSlotService.timeSlots.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              // Close All Button
+                              ElevatedButton.icon(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                        _showConfirmDialog(
+                                            context, timeSlotService, true);
+                                      },
+                                icon: const Icon(Icons.lock, size: 18),
+                                label: const Text('Close All'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.errorRed,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                              // Open All Button
+                              ElevatedButton.icon(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                        _showConfirmDialog(
+                                            context, timeSlotService, false);
+                                      },
+                                icon: const Icon(Icons.lock_open, size: 18),
+                                label: const Text('Open All'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.successGreen,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                              // Clear All Button
+                              ElevatedButton.icon(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                        _showClearAllConfirmDialog(
+                                            context, timeSlotService);
+                                      },
+                                icon: const Icon(Icons.delete_outline, size: 18),
+                                label: const Text('Clear All'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey[600],
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 16),
                         if (timeSlotService.isLoading)
                           const Center(child: CircularProgressIndicator())
                         else if (timeSlotService.timeSlots.isEmpty)
@@ -350,6 +428,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
       BuildContext context, TimeSlot slot, TimeSlotService timeSlotService) {
     final isSlotFull = slot.currentOrders >= slot.capacity;
     final availableSlots = slot.capacity - slot.currentOrders;
+    final isSlotOpen = slot.isAvailable;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -358,6 +437,20 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
+            // Status Indicator (Open/Closed badge on left)
+            Container(
+              width: 4,
+              height: 80,
+              decoration: BoxDecoration(
+                color: isSlotOpen
+                    ? AppColors.successGreen
+                    : AppColors.errorRed,
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
             // Time
             Expanded(
               child: Column(
@@ -373,6 +466,46 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Open/Closed Chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isSlotOpen
+                              ? AppColors.successGreen.withOpacity(0.2)
+                              : AppColors.errorRed.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSlotOpen
+                                ? AppColors.successGreen
+                                : AppColors.errorRed,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSlotOpen ? Icons.check_circle : Icons.lock,
+                              size: 12,
+                              color: isSlotOpen
+                                  ? AppColors.successGreen
+                                  : AppColors.errorRed,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isSlotOpen ? 'OPEN' : 'CLOSED',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isSlotOpen
+                                    ? AppColors.successGreen
+                                    : AppColors.errorRed,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -602,6 +735,291 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
         ),
       ),
     );
+  }
+
+  void _showConfirmDialog(
+      BuildContext context, TimeSlotService timeSlotService, bool closeSlots) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              closeSlots ? Icons.lock_outline : Icons.lock_open,
+              color: AppColors.primaryOrange,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(closeSlots ? 'Close All Slots' : 'Open All Slots'),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              closeSlots
+                  ? 'Are you sure you want to close all time slots for ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}?'
+                  : 'Are you sure you want to open all time slots for ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}?',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: closeSlots
+                    ? AppColors.errorRed.withOpacity(0.1)
+                    : AppColors.successGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                closeSlots
+                    ? 'All customers will not be able to book orders for this date'
+                    : 'All time slots will be available for booking',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: closeSlots
+                      ? AppColors.errorRed
+                      : AppColors.successGreen,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _toggleAllSlots(context, timeSlotService, closeSlots);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  closeSlots ? AppColors.errorRed : AppColors.successGreen,
+            ),
+            child: Text(closeSlots ? 'Close All' : 'Open All'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleAllSlots(
+      BuildContext context, TimeSlotService timeSlotService, bool close) async {
+    try {
+      setState(() => _isLoading = true);
+
+      final success = await timeSlotService.toggleAllSlotsAvailability(
+        _selectedDate,
+        !close,
+      );
+
+      if (mounted) {
+        if (success) {
+          // Refresh the list
+          await timeSlotService.getMyTimeSlots(date: _selectedDate);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                close
+                    ? 'All time slots closed successfully!'
+                    : 'All time slots opened successfully!',
+              ),
+              backgroundColor:
+                  close ? AppColors.errorRed : AppColors.successGreen,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update time slots'),
+              backgroundColor: AppColors.errorRed,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildStatusBadge(TimeSlotService timeSlotService) {
+    // Check if all slots are open or closed
+    if (timeSlotService.timeSlots.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final allOpen = timeSlotService.timeSlots.every((slot) => slot.isAvailable);
+    final allClosed =
+        timeSlotService.timeSlots.every((slot) => !slot.isAvailable);
+
+    String status;
+    Color color;
+    IconData icon;
+
+    if (allOpen) {
+      status = 'Status: ALL OPEN';
+      color = AppColors.successGreen;
+      icon = Icons.check_circle;
+    } else if (allClosed) {
+      status = 'Status: ALL CLOSED';
+      color = AppColors.errorRed;
+      icon = Icons.lock;
+    } else {
+      status = 'Status: MIXED';
+      color = Colors.orange;
+      icon = Icons.info;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Text(
+            status,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearAllConfirmDialog(
+      BuildContext context, TimeSlotService timeSlotService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.delete_forever,
+              color: AppColors.errorRed,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Clear All Slots'),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Are you sure you want to delete all time slots for ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}?',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.errorRed.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'This action will permanently delete all time slots. This cannot be undone.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.errorRed,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _clearAllSlots(context, timeSlotService);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.errorRed,
+            ),
+            child: const Text('Delete All Slots'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearAllSlots(
+      BuildContext context, TimeSlotService timeSlotService) async {
+    try {
+      setState(() => _isLoading = true);
+
+      // Delete all slots for the selected date
+      final success = await timeSlotService.deleteAllSlots(_selectedDate);
+
+      if (mounted) {
+        if (success) {
+          // Refresh the list
+          await timeSlotService.getMyTimeSlots(date: _selectedDate);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('All time slots cleared successfully!'),
+              backgroundColor: AppColors.successGreen,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to clear time slots'),
+              backgroundColor: AppColors.errorRed,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _generateSlots(

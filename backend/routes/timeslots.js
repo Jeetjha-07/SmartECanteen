@@ -206,6 +206,40 @@ router.put('/:slotId', verifyJWT, async (req, res) => {
   }
 });
 
+// Close/Open ALL time slots for a specific date
+router.patch('/batch/toggle-availability', verifyJWT, async (req, res) => {
+  try {
+    const { date, isAvailable } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date is required' });
+    }
+
+    const dateObj = new Date(date);
+    const cleanDate = new Date(dateObj.toDateString());
+
+    // Update all slots for this restaurant on this date
+    const result = await TimeSlot.updateMany(
+      {
+        restaurantId: req.user.userId,
+        date: cleanDate,
+      },
+      {
+        $set: { isAvailable: isAvailable }
+      }
+    );
+
+    console.log(`🔄 Toggled ${result.modifiedCount} time slots to isAvailable=${isAvailable} for date ${date}`);
+
+    res.json({
+      message: `${result.modifiedCount} time slots ${isAvailable ? 'opened' : 'closed'}`,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get slot statistics for the day
 router.get('/owner/stats/:date', verifyJWT, async (req, res) => {
   try {
@@ -226,6 +260,64 @@ router.get('/owner/stats/:date', verifyJWT, async (req, res) => {
     };
 
     res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a single time slot
+router.delete('/:slotId', verifyJWT, async (req, res) => {
+  try {
+    const { slotId } = req.params;
+
+    const slot = await TimeSlot.findById(slotId);
+
+    if (!slot) {
+      return res.status(404).json({ error: 'Time slot not found' });
+    }
+
+    // Verify ownership
+    if (slot.restaurantId !== req.user.userId) {
+      return res.status(403).json({ error: 'Unauthorized to delete this slot' });
+    }
+
+    await TimeSlot.findByIdAndDelete(slotId);
+
+    console.log(`🗑️ Deleted time slot ${slotId}`);
+
+    res.json({
+      message: 'Time slot deleted successfully',
+      slotId: slotId,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete all time slots for a specific date
+router.delete('/batch/delete-by-date', verifyJWT, async (req, res) => {
+  try {
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date is required' });
+    }
+
+    const dateObj = new Date(date);
+    const cleanDate = new Date(dateObj.toDateString());
+
+    // Delete all slots for this restaurant on this date
+    const result = await TimeSlot.deleteMany({
+      restaurantId: req.user.userId,
+      date: cleanDate,
+    });
+
+    console.log(`🗑️ Deleted ${result.deletedCount} time slots for date ${date}`);
+
+    res.json({
+      message: `${result.deletedCount} time slots deleted successfully`,
+      deletedCount: result.deletedCount,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

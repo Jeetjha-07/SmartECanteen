@@ -1,5 +1,5 @@
 {
-   "checksum": "f113bd3c642d45ff9eed35cb85148e82",
+   "checksum": "dbeade8472ea076fe701a8c17d21bca8",
    "roots": {
       "bookmark_bar": {
          "children": [ {
@@ -78,6 +78,94 @@
             "url": "https://docs.google.com/spreadsheets/d/1I92iAhJAwG8Q67ty3J3ryqqmces26dbNfVCplEomCh4/edit?gid=0#gid=0",
             "visit_count": 1
          }, {
+            "date_added": "13420433164429492",
+            "date_last_used": "0",
+            "guid": "9c4a9f7a-eb50-4c2b-a317-b18e5470aa18",
+            "id": "43",
+            "name": "Utomik Games",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.utomik.com/hp_edgefavourites",
+            "visit_count": 0
+         }, {
+            "date_added": "13420433164428331",
+            "date_last_used": "0",
+            "guid": "a8152577-6af3-423e-b7cc-58f051c32dce",
+            "id": "42",
+            "name": "Booking.com",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.booking.com/index.html?aid=1980379&label=edge2020",
+            "visit_count": 0
+         }, {
+            "date_added": "13420433164427110",
+            "date_last_used": "0",
+            "guid": "69a09868-745e-4eb2-a066-1699ecd02f2b",
+            "id": "41",
+            "name": "Express VPN",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "http://js.redirect.hp.com/jumpstation?bd=expressvpn&c=*&locale=en_us&pf=*&s=*&tp=edge",
+            "visit_count": 0
+         }, {
+            "date_added": "13420433164425715",
+            "date_last_used": "0",
+            "guid": "b95568cc-c28a-4a86-897c-bac24b059018",
+            "id": "40",
+            "name": "LastPass password manager",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "http://js.redirect.hp.com/jumpstation?bd=lastpass&c=*&locale=*&pf=*&s=*&tp=edge",
+            "visit_count": 0
+         }, {
+            "date_added": "13420405538973408",
+            "date_last_used": "0",
+            "guid": "41367ca9-6fd3-4c80-a27c-85e78bc3c3f5",
+            "id": "37",
+            "name": "Utomik Games",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.utomik.com/hp_edgefavourites",
+            "visit_count": 0
+         }, {
+            "date_added": "13420405538972190",
+            "date_last_used": "0",
+            "guid": "b76ae69d-127b-482c-acdf-a81f0e07c34b",
+            "id": "36",
+            "name": "Booking.com",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.booking.com/index.html?aid=1980379&label=edge2020",
+            "visit_count": 0
+         }, {
+            "date_added": "13420405538970930",
+            "date_last_used": "0",
+            "guid": "2a872b6b-99bb-41a0-bb64-72495da7ebee",
+            "id": "35",
+            "name": "Express VPN",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "http://js.redirect.hp.com/jumpstation?bd=expressvpn&c=*&locale=en_us&pf=*&s=*&tp=edge",
+            "visit_count": 0
+         }, {
+            "date_added": "13420405538969526",
+            "date_last_used": "0",
+            "guid": "5559dbe6-50e7-416c-963e-b2a8b32d71e2",
+            "id": "34",
+            "name": "LastPass password manager",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "http://js.redirect.hp.com/jumpstation?bd=lastpass&c=*&locale=*&pf=*&s=*&tp=edge",
+            "visit_count": 0
+         }, {
             "date_added": "13420404100594731",
             "date_last_used": "0",
             "guid": "57f0ed65-1b89-4dc2-bf5a-c07aae8c7dee",
@@ -124,7 +212,7 @@
          } ],
          "date_added": "13420404100174477",
          "date_last_used": "0",
-         "date_modified": "0",
+         "date_modified": "13420433174451850",
          "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
          "id": "1",
          "name": "Favorites bar",
@@ -317,6 +405,29 @@
          "name": "Mobile favorites",
          "source": "unknown",
          "type": "folder"
+      },
+      "workspaces": {
+         "children": [ {
+            "children": [  ],
+            "date_added": "13420433192342728",
+            "date_last_used": "0",
+            "date_modified": "13420433192342730",
+            "guid": "27598504-5258-4312-9073-8991496ee4ba",
+            "id": "44",
+            "name": "Workspace 1",
+            "source": "unknown",
+            "type": "workspace",
+            "workspace_id": "b940d9ed-2cda-4fd5-b297-73e1a635bb27"
+         } ],
+         "date_added": "13420433164065668",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "00000000-0000-4000-a000-000000000006",
+         "id": "38",
+         "name": "Workspaces favorites",
+         "source": "unknown",
+         "type": "workspace",
+         "workspace_id": ""
       },
       "workspaces_v2": {
          "children": [  ],

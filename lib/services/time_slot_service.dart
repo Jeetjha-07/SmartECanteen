@@ -154,6 +154,36 @@ class TimeSlotService extends ChangeNotifier {
     }
   }
 
+  // Close/Open ALL time slots for a specific date
+  Future<bool> toggleAllSlotsAvailability(DateTime date, bool isAvailable) async {
+    try {
+      final dateStr =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      final statusText = isAvailable ? 'opening' : 'closing';
+      print('🔄 $statusText all time slots for $dateStr');
+
+      final response = await _apiService.patch(
+        '${ApiService.baseUrl}/timeslots/batch/toggle-availability',
+        body: {
+          'date': dateStr,
+          'isAvailable': isAvailable,
+        },
+      );
+
+      if (response != null) {
+        final modifiedCount = response['modifiedCount'] ?? 0;
+        print('✅ ${isAvailable ? 'Opened' : 'Closed'} $modifiedCount time slots');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      error = e.toString();
+      print('❌ Error toggling all slots: $e');
+      return false;
+    }
+  }
+
   // Get slot statistics for a day
   Future<void> getSlotStats(DateTime date) async {
     try {
@@ -171,6 +201,45 @@ class TimeSlotService extends ChangeNotifier {
       print('Error fetching slot stats: $e');
     }
     notifyListeners();
+  }
+
+  // Delete a single time slot
+  Future<bool> deleteSlot(String slotId) async {
+    try {
+      final response = await _apiService.delete(
+        '${ApiService.baseUrl}/timeslots/$slotId',
+      );
+
+      if (response != null) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      error = e.toString();
+      print('Error deleting time slot: $e');
+      return false;
+    }
+  }
+
+  // Delete all time slots for a specific date
+  Future<bool> deleteAllSlots(DateTime date) async {
+    try {
+      final dateStr =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      final response = await _apiService.delete(
+        '${ApiService.baseUrl}/timeslots/batch/delete-by-date?date=$dateStr',
+      );
+
+      if (response != null) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      error = e.toString();
+      print('Error deleting all time slots: $e');
+      return false;
+    }
   }
 
   void clearError() {
