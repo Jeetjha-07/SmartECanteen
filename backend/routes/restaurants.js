@@ -7,6 +7,7 @@ const Restaurant = require('../models/Restaurant');
 const MenuItem = require('../models/MenuItem');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
 
 const router = express.Router();
 
@@ -74,7 +75,7 @@ const verifyJWT = (req, res, next) => {
 };
 
 // Register/Create Restaurant
-router.post('/register', verifyJWT, upload.single('image'), async (req, res) => {
+router.post('/register', verifyJWT, async (req, res) => {
   try {
     const {
       restaurantName,
@@ -93,6 +94,7 @@ router.post('/register', verifyJWT, upload.single('image'), async (req, res) => 
       bankDetails,
       isVerified,
       isOpen,
+      imageUrl, // Now accept imageUrl from request body (from /upload endpoint)
     } = req.body;
 
     // Check if restaurant already exists for this user
@@ -101,30 +103,18 @@ router.post('/register', verifyJWT, upload.single('image'), async (req, res) => 
     });
 
     if (existingRestaurant) {
-      // Clean up uploaded file if restaurant already exists
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(400).json({ error: 'Restaurant already registered for this account' });
     }
 
-    // Handle image upload - store the relative path for serving via /uploads
-    let imageUrl = null;
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
-      console.log(`📸 Image uploaded: ${imageUrl}`);
-    } else {
-      // Use placeholder if no image provided
-      imageUrl = '/uploads/placeholder.jpg';
-    }
+    // Use provided Cloudinary imageUrl or placeholder
+    const finalImageUrl = imageUrl || 'https://res.cloudinary.com/deeifvoqv/image/upload/v1/smartcanteen/placeholder.png';
+    console.log(`📸 Restaurant image URL: ${finalImageUrl}`);
 
     const restaurant = new Restaurant({
       restaurantId: req.user.userId,
       restaurantName,
       description,
-      imageUrl, // Store the relative path
+      imageUrl: finalImageUrl, // Store Cloudinary URL
       cuisineTypes: cuisineTypes ? (typeof cuisineTypes === 'string' ? [cuisineTypes] : cuisineTypes) : ['Multi-Cuisine'],
       address,
       phone,
@@ -166,12 +156,36 @@ router.post('/register', verifyJWT, upload.single('image'), async (req, res) => 
       restaurant,
     });
   } catch (error) {
-    // Clean up uploaded file in case of error
-    if (req.file) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Error deleting file:', err);
-      });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Upload restaurant image to Cloudinary (without creating restaurant)
+router.post('/upload', verifyJWT, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
     }
+
+    console.log(`📤 Uploading restaurant image to Cloudinary...`);
+    console.log(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
+
+    // Upload to Cloudinary
+    const cloudinaryUrl = await uploadToCloudinary(
+      req.file.buffer,
+      'smartcanteen/restaurants',
+      `restaurant_${req.user.userId}_${Date.now()}`
+    );
+
+    console.log(`✅ Restaurant image uploaded to Cloudinary: ${cloudinaryUrl}`);
+
+    res.json({
+      success: true,
+      imageUrl: cloudinaryUrl,
+      message: 'Image uploaded successfully to Cloudinary'
+    });
+  } catch (error) {
+    console.error('❌ Upload error:', error);
     res.status(500).json({ error: error.message });
   }
 });
