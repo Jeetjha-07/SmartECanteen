@@ -7,6 +7,7 @@ import '../../services/cart_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/error_handler.dart';
 import 'login_screen.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -68,7 +69,8 @@ class _MenuScreenState extends State<MenuScreen> {
                     const Icon(Icons.error_outline,
                         color: AppColors.errorRed, size: 48),
                     const SizedBox(height: 12),
-                    Text('Error: ${menuService.error}'),
+                    Text(ErrorHandler.formatError(
+                        menuService.error ?? 'An error occurred')),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () => menuService.getMenuItems(),

@@ -6,6 +6,7 @@ import 'services/restaurant_service.dart';
 import 'services/time_slot_service.dart';
 import 'services/coupon_service.dart';
 import 'services/menu_service.dart';
+import 'services/payment_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/customer/shop_listing_screen.dart';
 import 'screens/customer/checkout_screen.dart';
@@ -14,8 +15,24 @@ import 'utils/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   // Initialize authentication (load saved JWT token if available)
   await AuthService.initializeAuth();
+  
+  // Initialize Razorpay payment service with event handlers
+  PaymentService.initRazorpay(
+    onSuccess: (response) {
+      print('✅ Payment Success: ${response.paymentId}');
+      // Payment verification is handled automatically in PaymentService
+    },
+    onFailure: (response) {
+      print('❌ Payment Failed: ${response.code} - ${response.message}');
+    },
+    onWallet: (response) {
+      print('💳 Wallet Selected: ${response.walletName}');
+    },
+  );
+  
   runApp(const MyApp());
 }
 

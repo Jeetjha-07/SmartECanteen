@@ -4,6 +4,7 @@ import '../../services/restaurant_service.dart';
 import '../../services/api_service.dart';
 import '../../models/restaurant.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/error_handler.dart';
 import 'shop_detail_screen.dart';
 
 class ShopListingScreen extends StatefulWidget {
@@ -165,7 +166,9 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                             const Icon(Icons.error_outline,
                                 size: 48, color: Colors.red),
                             const SizedBox(height: 8),
-                            Text('Error: ${restaurantService.error}'),
+                            Text(ErrorHandler.formatError(
+                                restaurantService.error ??
+                                    'An error occurred')),
                           ],
                         ),
                       );

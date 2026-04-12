@@ -18,6 +18,7 @@
         "intl",
         "lottie",
         "provider",
+        "razorpay_flutter",
         "shimmer",
         "uuid"
       ],
@@ -55,6 +56,14 @@
       "name": "cupertino_icons",
       "version": "1.0.8",
       "dependencies": []
+    },
+    {
+      "name": "razorpay_flutter",
+      "version": "1.4.4",
+      "dependencies": [
+        "eventify",
+        "flutter"
+      ]
     },
     {
       "name": "uuid",
@@ -263,6 +272,11 @@
         "string_scanner",
         "term_glyph"
       ]
+    },
+    {
+      "name": "eventify",
+      "version": "1.0.1",
+      "dependencies": []
     },
     {
       "name": "fixnum",

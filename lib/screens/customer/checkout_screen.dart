@@ -6,7 +6,10 @@ import '../../services/cart_service.dart';
 import '../../services/coupon_service.dart';
 import '../../services/order_service.dart';
 import '../../services/time_slot_service.dart';
+import '../../services/payment_service.dart';
+import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/error_handler.dart';
 import 'home_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -68,6 +71,67 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cartService = context.read<CartService>();
     final totalWithDiscount = cartService.totalPrice - _discountAmount;
 
+    // If payment method is Online (Card), process through Razorpay
+    if (_paymentMethod == 'Card') {
+      try {
+        // Step 1: Create Razorpay order
+        final orderResponse = await PaymentService.createPaymentOrder(
+          orderId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
+          amount: totalWithDiscount,
+          currency: 'INR',
+        );
+
+        if (!orderResponse['success']) {
+          setState(() => _isProcessing = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(ErrorHandler.formatError(
+                'Failed to create payment order: ${orderResponse['error']}')),
+            backgroundColor: AppColors.errorRed,
+          ));
+          return;
+        }
+
+        // Step 2: Open Razorpay checkout
+        final currentUser = AuthService.currentUser;
+        if (currentUser == null) {
+          setState(() => _isProcessing = false);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Please login to continue'),
+            backgroundColor: AppColors.errorRed,
+          ));
+          return;
+        }
+
+        // Step 3: Open payment gateway and wait for result
+        PaymentService.openCheckout(
+          razorpayOrderId: orderResponse['razorpayOrderId'],
+          amount: totalWithDiscount,
+          customerName: currentUser.name,
+          customerEmail: currentUser.email,
+          customerPhone: _phoneController.text.trim(),
+          description: 'SmartCanteen Order',
+          key: orderResponse['key'],
+        );
+
+        // After payment is verified (via PaymentService callbacks),
+        // the actual order will be placed through the payment verification endpoint
+        // For now, clear processing state and show payment processing message
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Processing payment... Please complete the payment'),
+          backgroundColor: AppColors.primaryOrange,
+        ));
+      } catch (e) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ErrorHandler.formatError('Error: $e')),
+          backgroundColor: AppColors.errorRed,
+        ));
+      }
+      return;
+    }
+
+    // For COD, place order directly
     final result = await OrderService.placeOrder(
       cartItems: cartService.cartItems,
       totalAmount: totalWithDiscount,
@@ -156,7 +220,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to place order: ${result['error']}'),
+        content: Text(ErrorHandler.formatError(
+            result['error'] ?? 'Failed to place order')),
         backgroundColor: AppColors.errorRed,
       ));
     }
@@ -484,7 +549,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 Icon(Icons.payment,
                                     color: AppColors.primaryOrange),
                                 SizedBox(width: 8),
-                                Text('Online Payment (Card)'),
+                                Text('Razorpay (Cards, UPI, Wallets)'),
                               ],
                             ),
                             value: 'Card',
@@ -569,7 +634,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final cartService = context.read<CartService>();
       final couponService = context.read<CouponService>();
-      
+
       // Call actual API validation with restaurant ID
       final result = await couponService.validateCoupon(
         code: code,
@@ -600,7 +665,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ));
       } else {
         if (!mounted) return;
-        final errorMsg = result?['error'] ?? 'Invalid coupon code';
+        final errorMsg =
+            ErrorHandler.formatError(result?['error'] ?? 'Invalid coupon code');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(errorMsg),
           backgroundColor: AppColors.errorRed,
@@ -609,7 +675,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error: ${e.toString()}'),
+        content: Text(ErrorHandler.formatError('Error: ${e.toString()}')),
         backgroundColor: AppColors.errorRed,
       ));
     }

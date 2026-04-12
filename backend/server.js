@@ -64,6 +64,8 @@ app.use('/api/reviews', checkMongoConnection, require('./routes/reviews'));
 app.use('/api/restaurants', checkMongoConnection, require('./routes/restaurants'));
 app.use('/api/coupons', checkMongoConnection, require('./routes/coupons'));
 app.use('/api/timeslots', checkMongoConnection, require('./routes/timeslots'));
+app.use('/api/payments', checkMongoConnection, require('./routes/payments'));
+app.use('/api/analytics', checkMongoConnection, require('./routes/analytics'));
 
 // Health check
 app.get('/health', (req, res) => {

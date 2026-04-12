@@ -6,6 +6,7 @@ import '../../services/cart_service.dart';
 import '../../models/restaurant.dart';
 import '../../models/food_item.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/error_handler.dart';
 
 class ShopDetailScreen extends StatefulWidget {
   final Restaurant restaurant;
@@ -60,7 +61,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
 
                   if (menuService.error != null) {
                     return Center(
-                      child: Text('Error: ${menuService.error}'),
+                      child: Text(ErrorHandler.formatError(
+                          menuService.error ?? 'An error occurred')),
                     );
                   }
 

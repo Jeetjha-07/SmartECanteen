@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/error_handler.dart';
 import 'home_screen.dart';
 import '../restaurant/restaurant_home.dart';
 
@@ -65,7 +66,8 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
     } else {
-      setState(() => _errorMessage = result['error']);
+      setState(() => _errorMessage =
+          ErrorHandler.formatError(result['error'] ?? 'Registration failed'));
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/error_handler.dart';
 import 'home_screen.dart';
 import 'signup_screen.dart';
 import '../restaurant/restaurant_home.dart';
@@ -56,7 +57,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      setState(() => _errorMessage = result['error']);
+      setState(() => _errorMessage =
+          ErrorHandler.formatError(result['error'] ?? 'Login failed'));
     }
   }
 
@@ -79,7 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } else {
-      setState(() => _errorMessage = result['error']);
+      setState(() => _errorMessage =
+          ErrorHandler.formatError(result['error'] ?? 'Password reset failed'));
     }
   }
 
@@ -163,7 +166,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Password is required';
+                        if (v == null || v.isEmpty)
+                          return 'Password is required';
                         return null;
                       },
                     ),
@@ -185,8 +189,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.errorRed.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: AppColors.errorRed.withOpacity(0.3)),
+                    border:
+                        Border.all(color: AppColors.errorRed.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [

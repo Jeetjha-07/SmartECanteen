@@ -23,14 +23,18 @@ const orderSchema = new mongoose.Schema(
     couponDiscount: { type: Number, default: 0 },
     paymentMethod: {
       type: String,
-      enum: ['Card', 'UPI', 'NetBanking', 'Wallet', 'COD'],
-      default: 'Card',
+      enum: ['Card', 'UPI', 'NetBanking', 'Wallet', 'COD', 'Razorpay'],
+      default: 'COD',
     },
     paymentStatus: {
       type: String,
       enum: ['Pending', 'Completed', 'Failed'],
       default: 'Pending',
     },
+    // Razorpay payment details
+    razorpay_order_id: String, // Razorpay order ID
+    razorpay_payment_id: String, // Razorpay payment ID
+    paymentVerifiedAt: Date, // When payment was verified
     status: {
       type: String,
       enum: ['Pending', 'Preparing', 'Ready', 'Delivered', 'Cancelled'],
