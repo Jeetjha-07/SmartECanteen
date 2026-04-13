@@ -9,6 +9,25 @@ import '../../models/food_item.dart';
 import '../../utils/app_colors.dart';
 import 'restaurant_shop_registration_screen.dart';
 
+// Top-level helper function to construct complete image URL
+String _getCompleteImageUrl(String relativeUrl) {
+  if (relativeUrl.isEmpty) {
+    print('⚠️ Image URL is empty');
+    return '';
+  }
+
+  // If it's already a complete URL (HTTP/HTTPS), return as-is
+  if (relativeUrl.startsWith('http://') ||
+      relativeUrl.startsWith('https://')) {
+    print('✅ Already a complete URL: $relativeUrl');
+    return relativeUrl;
+  }
+
+  // Skip any non-HTTP URLs or placeholders
+  print('❌ Invalid URL format (not HTTP): $relativeUrl');
+  return '';
+}
+
 class RestaurantMenuScreen extends StatefulWidget {
   const RestaurantMenuScreen({super.key});
 
@@ -765,24 +784,5 @@ class _MenuItemCardState extends State<_MenuItemCard> {
         ),
       ),
     );
-  }
-
-  // Helper method to construct complete image URL
-  String _getCompleteImageUrl(String relativeUrl) {
-    if (relativeUrl.isEmpty) {
-      print('⚠️ Image URL is empty');
-      return '';
-    }
-
-    // If it's already a complete URL (HTTP/HTTPS), return as-is
-    if (relativeUrl.startsWith('http://') ||
-        relativeUrl.startsWith('https://')) {
-      print('✅ Already a complete URL: $relativeUrl');
-      return relativeUrl;
-    }
-
-    // Skip any non-HTTP URLs or placeholders
-    print('❌ Invalid URL format (not HTTP): $relativeUrl');
-    return '';
   }
 }
