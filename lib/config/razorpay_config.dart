@@ -2,10 +2,11 @@
 class RazorpayConfig {
   // Razorpay API Key (Public key - safe to expose in frontend)
   // Get from: https://dashboard.razorpay.com → Settings → API Keys
-  // TEST KEY: rzp_test_1rLKnTyIEFnLZN
+  // TEST KEY: rzp_test_ScRRPFhQ53SYXe
   // Replace with your LIVE key for production
-  static const String KEY_ID = 'rzp_test_1rLKnTyIEFnLZN'; // Update with your key
-  
+  static const String KEY_ID =
+      'rzp_test_ScRRPFhQ53SYXe'; // Update with your key
+
   // NOTE: Key Secret is NEVER used in frontend!
   // Key Secret is stored server-side in .env and used only for payment verification
   // DANGER: Never expose KEY_SECRET in frontend code!

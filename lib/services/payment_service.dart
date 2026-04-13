@@ -11,17 +11,20 @@ class PaymentService {
     required Function(PaymentFailureResponse) onFailure,
     required Function(ExternalWalletResponse) onWallet,
   }) {
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS,
+        (PaymentSuccessResponse response) {
       print('✅ Payment Success: ${response.paymentId}');
       onSuccess(response);
     });
 
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse response) {
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR,
+        (PaymentFailureResponse response) {
       print('❌ Payment Error: ${response.code} - ${response.message}');
       onFailure(response);
     });
 
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET,
+        (ExternalWalletResponse response) {
       print('💳 External Wallet: ${response.walletName}');
       onWallet(response);
     });
@@ -34,7 +37,12 @@ class PaymentService {
     String currency = 'INR',
   }) async {
     try {
-      print('📝 Creating payment order for: $orderId, Amount: ₹$amount');
+      print('═══════════════════════════════════════════════════');
+      print('💳 CREATING PAYMENT ORDER');
+      print('   Order ID: $orderId');
+      print('   Amount: ₹$amount INR (${(amount * 100).toInt()} paise)');
+      print('   API Endpoint: ${ApiService.baseUrl}/payments/create-order');
+      print('═══════════════════════════════════════════════════');
 
       final response = await ApiService().post(
         '${ApiService.baseUrl}/payments/create-order',
@@ -49,7 +57,9 @@ class PaymentService {
         final data = response is String ? jsonDecode(response) : response;
 
         if (data is Map && data['success'] == true) {
-          print('✅ Payment order created: ${data['razorpayOrderId']}');
+          print('✅ Payment order created successfully');
+          print('   Razorpay Order ID: ${data['razorpayOrderId']}');
+          print('   API Key: ${data['key']?.substring(0, 10)}...');
           return {
             'success': true,
             'razorpayOrderId': data['razorpayOrderId'],
@@ -60,12 +70,15 @@ class PaymentService {
         }
       }
 
+      print('❌ Payment order creation failed: Invalid response');
       return {
         'success': false,
         'error': 'Failed to create payment order',
       };
     } catch (e) {
-      print('❌ Error creating payment order: $e');
+      print('❌ ERROR creating payment order:');
+      print('   Error: $e');
+      print('═══════════════════════════════════════════════════');
       return {
         'success': false,
         'error': 'Error: $e',
@@ -81,7 +94,12 @@ class PaymentService {
     required String orderId,
   }) async {
     try {
-      print('🔐 Verifying payment: $razorpayPaymentId');
+      print('═══════════════════════════════════════════════════');
+      print('🔐 VERIFYING PAYMENT SIGNATURE');
+      print('   Razorpay Order ID: $razorpayOrderId');
+      print('   Razorpay Payment ID: $razorpayPaymentId');
+      print('   Signature: ${razorpaySignature.substring(0, 10)}...');
+      print('═══════════════════════════════════════════════════');
 
       final response = await ApiService().post(
         '${ApiService.baseUrl}/payments/verify-payment',
@@ -97,7 +115,10 @@ class PaymentService {
         final data = response is String ? jsonDecode(response) : response;
 
         if (data is Map && data['success'] == true) {
-          print('✅ Payment verified successfully!');
+          print('✅ Payment signature verified successfully!');
+          print('   Order ID: ${data['order']?['_id'] ?? 'N/A'}');
+          print(
+              '   Payment Status: ${data['order']?['paymentStatus'] ?? 'N/A'}');
           return {
             'success': true,
             'message': data['message'] ?? 'Payment verified',
@@ -106,12 +127,15 @@ class PaymentService {
         }
       }
 
+      print('❌ Payment verification failed: Invalid response');
       return {
         'success': false,
         'error': 'Payment verification failed',
       };
     } catch (e) {
-      print('❌ Error verifying payment: $e');
+      print('❌ ERROR verifying payment:');
+      print('   Error: $e');
+      print('═══════════════════════════════════════════════════');
       return {
         'success': false,
         'error': 'Error: $e',
@@ -119,8 +143,8 @@ class PaymentService {
     }
   }
 
-  /// Open Razorpay checkout
-  static void openCheckout({
+  /// Open Razorpay checkout and store context for verification
+  static Future<void> openCheckout({
     required String razorpayOrderId,
     required double amount,
     required String customerName,
@@ -128,12 +152,14 @@ class PaymentService {
     required String customerPhone,
     String description = 'SmartCanteen Food Order',
     String key = '',
-  }) {
+    required Function(Map<String, dynamic>) onPaymentSuccess,
+    required Function(String) onPaymentError,
+  }) async {
     try {
       print('💳 Opening Razorpay checkout...');
 
       var options = {
-        'key': key.isNotEmpty ? key : 'rzp_test_YOUR_TEST_KEY',
+        'key': key.isNotEmpty ? key : 'rzp_test_ScRRPFhQ53SYXe',
         'order_id': razorpayOrderId,
         'amount': (amount * 100).toInt(), // amount in paise
         'currency': 'INR',
@@ -152,10 +178,47 @@ class PaymentService {
         }
       };
 
+      // Remove previous listeners to avoid duplicate events
+      _razorpay.clear();
+
+      // Re-attach event handlers
+      _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS,
+          (PaymentSuccessResponse response) async {
+        print('✅ Payment Success: ${response.paymentId}');
+
+        // Verify payment on backend
+        final verifyResult = await verifyPayment(
+          razorpayOrderId: razorpayOrderId,
+          razorpayPaymentId: response.paymentId ?? '',
+          razorpaySignature: response.signature ?? '',
+          orderId: razorpayOrderId,
+        );
+
+        if (verifyResult['success']) {
+          print('✅ Payment verified and order placed!');
+          onPaymentSuccess(verifyResult);
+        } else {
+          print('❌ Payment verification failed');
+          onPaymentError(
+              verifyResult['error'] ?? 'Payment verification failed');
+        }
+      });
+
+      _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR,
+          (PaymentFailureResponse response) {
+        print('❌ Payment Error: ${response.code} - ${response.message}');
+        onPaymentError(response.message ?? 'Payment failed');
+      });
+
+      _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET,
+          (ExternalWalletResponse response) {
+        print('💳 External Wallet: ${response.walletName}');
+      });
+
       _razorpay.open(options);
     } catch (e) {
       print('❌ Error opening checkout: $e');
-      rethrow;
+      onPaymentError('Error opening payment gateway: $e');
     }
   }
 

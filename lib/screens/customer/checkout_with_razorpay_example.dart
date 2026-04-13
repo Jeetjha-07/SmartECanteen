@@ -15,7 +15,8 @@ class CheckoutWithRazorpayExample extends StatefulWidget {
   final String customerEmail;
   final String customerPhone;
 
-  const CheckoutWithRazorpayExample({super.key, 
+  const CheckoutWithRazorpayExample({
+    super.key,
     required this.orderId,
     required this.totalAmount,
     required this.customerName,
@@ -120,8 +121,8 @@ class _CheckoutWithRazorpayExampleState
         return;
       }
 
-      // Step 2: Open Razorpay checkout
-      PaymentService.openCheckout(
+      // Step 2: Open Razorpay checkout with callbacks
+      await PaymentService.openCheckout(
         razorpayOrderId: orderResponse['razorpayOrderId'],
         amount: widget.totalAmount,
         customerName: widget.customerName,
@@ -129,12 +130,22 @@ class _CheckoutWithRazorpayExampleState
         customerPhone: widget.customerPhone,
         description: 'SmartCanteen Order #${widget.orderId}',
         key: orderResponse['key'],
+        onPaymentSuccess: (verifyResult) async {
+          // Payment verified automatically in PaymentService
+          _showSuccessDialog();
+        },
+        onPaymentError: (errorMsg) {
+          _showErrorDialog(
+              ErrorHandler.formatError('Payment failed: $errorMsg'));
+        },
       );
     } catch (e) {
       _showErrorDialog(
           ErrorHandler.formatError('Error initiating payment: $e'));
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 

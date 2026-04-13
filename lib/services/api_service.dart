@@ -1,22 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../config/app_environment.dart';
 
 class ApiService {
   // Static JWT token storage
   static String? _jwtToken;
 
-  // 🎯 Local development backend
-  // static const String baseUrl = 'http://localhost:3000/api';
+  /// Dynamic base URL - switches between local and production based on AppEnvironment
+  static String get baseUrl => AppEnvironment.apiBaseUrl;
 
-  // Base server URL for accessing static files (uploads, etc)
-  // Remove /api from the end to get the server root
+  /// Base server URL for accessing static files (uploads, etc)
+  /// Remove /api from the end to get the server root
   static String get serverBaseUrl {
     return baseUrl.replaceAll('/api', '');
   }
-
-  // Production backend on Render (switch back when ready for deployment)
-  static const String baseUrl = 'https://smartecanteen-1.onrender.com/api';
 
   /// Set JWT token (called after login/register)
   static void setToken(String token) {
@@ -46,7 +45,7 @@ class ApiService {
     return headers;
   }
 
-  // Make HTTP requests with error handling
+  // Make HTTP requests with error handling and timeout
   static Future<dynamic> _makeRequest(
     String method,
     String url, {
@@ -56,46 +55,103 @@ class ApiService {
       final headers = getHeaders();
       late http.Response response;
 
-      print('📡 API Request: $method $url');
+      print('═══════════════════════════════════════════════════');
+      print('📡 API REQUEST');
+      print('   Method: $method');
+      print('   URL: $url');
+      print(
+          '   Auth: ${headers.containsKey('Authorization') ? '✅ Token Present' : '❌ No Token'}');
       if (body != null) print('   Body: ${jsonEncode(body)}');
+      print('   Environment: ${AppEnvironment.environmentName}');
+      print('═══════════════════════════════════════════════════');
 
+      // Add 15-second timeout to prevent hanging
       switch (method) {
         case 'GET':
-          response = await http.get(Uri.parse(url), headers: headers);
+          response = await http
+              .get(Uri.parse(url), headers: headers)
+              .timeout(const Duration(seconds: 15), onTimeout: () {
+            throw TimeoutException(
+                'Request timeout: Server took too long to respond');
+          });
           break;
         case 'POST':
-          response = await http.post(Uri.parse(url),
-              headers: headers, body: jsonEncode(body));
+          response = await http
+              .post(Uri.parse(url), headers: headers, body: jsonEncode(body))
+              .timeout(const Duration(seconds: 15), onTimeout: () {
+            throw TimeoutException(
+                'Request timeout: Server took too long to respond');
+          });
           break;
         case 'PUT':
-          response = await http.put(Uri.parse(url),
-              headers: headers, body: jsonEncode(body));
+          response = await http
+              .put(Uri.parse(url), headers: headers, body: jsonEncode(body))
+              .timeout(const Duration(seconds: 15), onTimeout: () {
+            throw TimeoutException(
+                'Request timeout: Server took too long to respond');
+          });
           break;
         case 'PATCH':
-          response = await http.patch(Uri.parse(url),
-              headers: headers, body: jsonEncode(body));
+          response = await http
+              .patch(Uri.parse(url), headers: headers, body: jsonEncode(body))
+              .timeout(const Duration(seconds: 15), onTimeout: () {
+            throw TimeoutException(
+                'Request timeout: Server took too long to respond');
+          });
           break;
         case 'DELETE':
-          response = await http.delete(Uri.parse(url), headers: headers);
+          response = await http
+              .delete(Uri.parse(url), headers: headers)
+              .timeout(const Duration(seconds: 15), onTimeout: () {
+            throw TimeoutException(
+                'Request timeout: Server took too long to respond');
+          });
           break;
       }
 
       print('📡 Response Code: ${response.statusCode}');
-      print('📡 Response: ${response.body}');
+      print('📡 Response Body: ${response.body.length} characters');
 
+      // Handle different status codes with specific error messages
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        print('✅ Success');
         return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        final errorMsg =
+            '🔐 AUTHENTICATION ERROR (401)\nYour session has expired or your JWT token is invalid.\nPlease login again.\n\nDetails: ${response.body}';
+        print('❌ $errorMsg');
+        throw Exception(errorMsg);
+      } else if (response.statusCode == 403) {
+        final errorMsg =
+            '🚫 PERMISSION DENIED (403)\nYou do not have permission to access this resource.\n\nDetails: ${response.body}';
+        print('❌ $errorMsg');
+        throw Exception(errorMsg);
+      } else if (response.statusCode == 404) {
+        final errorMsg =
+            '🔍 NOT FOUND (404)\nThe requested resource was not found.\nCheck if backend URL is correct: $url\n\nDetails: ${response.body}';
+        print('❌ $errorMsg');
+        throw Exception(errorMsg);
+      } else if (response.statusCode >= 500) {
+        final errorMsg =
+            '❌ SERVER ERROR (${response.statusCode})\nThe backend server is having issues.\nServer might be down or restarting.\n\nDetails: ${response.body}';
+        print('❌ $errorMsg');
+        throw Exception(errorMsg);
       } else {
         final errorMsg =
-            'API Error: ${response.statusCode}\nURL: $url\nResponse: ${response.body}';
+            '❌ API ERROR (${response.statusCode})\nAn unexpected error occurred.\nURL: $url\n\nDetails: ${response.body}';
         print('❌ $errorMsg');
         throw Exception(errorMsg);
       }
     } on SocketException catch (e) {
-      final error =
-          '❌ Connection Error: Cannot connect to server\nMake sure backend is running!\nError: $e';
-      print(error);
-      throw Exception(error);
+      final errorMsg =
+          '🌐 CONNECTION FAILED\n⚠️  Cannot reach backend server\n\nPossible causes:\n• Backend is not running (npm run dev)\n• Wrong backend URL in AppEnvironment\n• Firewall blocking connection\n• Network/Internet issue\n\nCurrent URL: $url\nEnvironment: ${AppEnvironment.environmentName}\n\nTechnical: $e';
+      print('❌ $errorMsg');
+      throw Exception(errorMsg);
+    } on TimeoutException catch (e) {
+      final errorMsg =
+          '⏱️  REQUEST TIMEOUT\n⚠️  Server took too long to respond (>15 seconds)\n\nPossible causes:\n• Backend server is overloaded\n• Network is too slow\n• Server is processing a slow query\n• Connection to backend is unstable\n\nURL: $url\nEnvironment: ${AppEnvironment.environmentName}\n\nTechnical: $e';
+      print('❌ $errorMsg');
+      throw Exception(errorMsg);
     } catch (e) {
       print('❌ Request error: $e');
       rethrow;
@@ -277,7 +333,7 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getRestaurantReviews(
       String restaurantId) async {
     // Use authenticated endpoint for restaurant app
-    const url = '$baseUrl/reviews/restaurant/my/reviews';
+    final url = '$baseUrl/reviews/restaurant/my/reviews';
     print('\n🔍 API: Fetching restaurant reviews (AUTHENTICATED)');
     print('   URL: $url');
     print('   restaurantId param (unused): $restaurantId');

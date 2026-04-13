@@ -74,9 +74,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // If payment method is Online (Card), process through Razorpay
     if (_paymentMethod == 'Card') {
       try {
+        // Create an order first for MongoDB
+        final orderId = 'ORDER_${DateTime.now().millisecondsSinceEpoch}';
+
         // Step 1: Create Razorpay order
         final orderResponse = await PaymentService.createPaymentOrder(
-          orderId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
+          orderId: orderId,
           amount: totalWithDiscount,
           currency: 'INR',
         );
@@ -91,7 +94,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           return;
         }
 
-        // Step 2: Open Razorpay checkout
+        // Step 2: Validate user
         final currentUser = AuthService.currentUser;
         if (currentUser == null) {
           setState(() => _isProcessing = false);
@@ -102,8 +105,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           return;
         }
 
-        // Step 3: Open payment gateway and wait for result
-        PaymentService.openCheckout(
+        // Step 3: Open payment gateway with callbacks
+        await PaymentService.openCheckout(
           razorpayOrderId: orderResponse['razorpayOrderId'],
           amount: totalWithDiscount,
           customerName: currentUser.name,
@@ -111,17 +114,48 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           customerPhone: _phoneController.text.trim(),
           description: 'SmartCanteen Order',
           key: orderResponse['key'],
-        );
+          onPaymentSuccess: (verifyResult) async {
+            // Payment verified automatically in PaymentService
+            // Now place the actual order
+            if (!mounted) return;
 
-        // After payment is verified (via PaymentService callbacks),
-        // the actual order will be placed through the payment verification endpoint
-        // For now, clear processing state and show payment processing message
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Processing payment... Please complete the payment'),
-          backgroundColor: AppColors.primaryOrange,
-        ));
+            final result = await OrderService.placeOrder(
+              cartItems: cartService.cartItems,
+              totalAmount: totalWithDiscount,
+              deliveryAddress: _addressController.text.trim(),
+              phoneNumber: _phoneController.text.trim(),
+              paymentMethod: 'Razorpay',
+              restaurantId: widget.restaurant!.restaurantId,
+              timeSlotId: _selectedTimeSlot!.id,
+              couponCode: _appliedCouponCode,
+            );
+
+            if (!mounted) return;
+            setState(() => _isProcessing = false);
+
+            if (result['success']) {
+              cartService.clearCart();
+              _showSuccessDialog();
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(ErrorHandler.formatError(
+                    result['error'] ?? 'Failed to place order')),
+                backgroundColor: AppColors.errorRed,
+              ));
+            }
+          },
+          onPaymentError: (errorMsg) {
+            if (!mounted) return;
+            setState(() => _isProcessing = false);
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content:
+                  Text(ErrorHandler.formatError('Payment failed: $errorMsg')),
+              backgroundColor: AppColors.errorRed,
+            ));
+          },
+        );
       } catch (e) {
+        if (!mounted) return;
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(ErrorHandler.formatError('Error: $e')),
@@ -148,76 +182,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (result['success']) {
       cartService.clearCart();
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: AppColors.successGreen.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle,
-                    color: AppColors.successGreen, size: 50),
-              ),
-              const SizedBox(height: 16),
-              const Text('Order Placed!',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text(
-                'Your order has been placed successfully.\nThe restaurant will start preparing it shortly.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textGrey),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 16, color: AppColors.primaryOrange),
-                    SizedBox(width: 6),
-                    Text(
-                      'Track in Orders tab',
-                      style: TextStyle(
-                          color: AppColors.primaryOrange,
-                          fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    (route) => false,
-                  );
-                },
-                child: const Text('Track My Order'),
-              ),
-            ),
-          ],
-        ),
-      );
+      _showSuccessDialog();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(ErrorHandler.formatError(
@@ -225,6 +190,78 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         backgroundColor: AppColors.errorRed,
       ));
     }
+  }
+
+  /// Show success dialog after order is placed
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: AppColors.successGreen.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle,
+                  color: AppColors.successGreen, size: 50),
+            ),
+            const SizedBox(height: 16),
+            const Text('Order Placed!',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text(
+              'Your order has been placed successfully.\nThe restaurant will start preparing it shortly.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textGrey),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline,
+                      size: 16, color: AppColors.primaryOrange),
+                  SizedBox(width: 6),
+                  Text(
+                    'Track in Orders tab',
+                    style: TextStyle(
+                        color: AppColors.primaryOrange,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  (route) => false,
+                );
+              },
+              child: const Text('Track My Order'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

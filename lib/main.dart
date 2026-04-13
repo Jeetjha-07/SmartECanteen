@@ -7,6 +7,7 @@ import 'services/time_slot_service.dart';
 import 'services/coupon_service.dart';
 import 'services/menu_service.dart';
 import 'services/payment_service.dart';
+import 'config/app_environment.dart';
 import 'screens/splash_screen.dart';
 import 'screens/customer/shop_listing_screen.dart';
 import 'screens/customer/checkout_screen.dart';
@@ -15,10 +16,13 @@ import 'utils/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Print environment configuration (useful for debugging)
+  AppEnvironment.printEnvironmentInfo();
+
   // Initialize authentication (load saved JWT token if available)
   await AuthService.initializeAuth();
-  
+
   // Initialize Razorpay payment service with event handlers
   PaymentService.initRazorpay(
     onSuccess: (response) {
@@ -32,7 +36,7 @@ void main() async {
       print('💳 Wallet Selected: ${response.walletName}');
     },
   );
-  
+
   runApp(const MyApp());
 }
 
