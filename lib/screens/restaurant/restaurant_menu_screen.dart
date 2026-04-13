@@ -773,13 +773,14 @@ class _MenuItemCardState extends State<_MenuItemCard> {
       print('⚠️ Image URL is empty');
       return '';
     }
-    
+
     // If it's already a complete URL (HTTP/HTTPS), return as-is
-    if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
+    if (relativeUrl.startsWith('http://') ||
+        relativeUrl.startsWith('https://')) {
       print('✅ Already a complete URL: $relativeUrl');
       return relativeUrl;
     }
-    
+
     // Skip any non-HTTP URLs or placeholders
     print('❌ Invalid URL format (not HTTP): $relativeUrl');
     return '';

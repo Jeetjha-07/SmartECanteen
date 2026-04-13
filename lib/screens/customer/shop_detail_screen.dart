@@ -233,7 +233,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
   // Build image widget with proper error handling
   Widget _buildItemImage(double width, double height, String imageUrl) {
     final completeUrl = _getCompleteImageUrl(imageUrl);
-    
+
     // If URL is empty or invalid, show placeholder
     if (completeUrl.isEmpty) {
       return Container(
