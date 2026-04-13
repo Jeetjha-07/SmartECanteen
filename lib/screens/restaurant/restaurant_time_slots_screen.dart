@@ -370,7 +370,8 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                                         _showClearAllConfirmDialog(
                                             context, timeSlotService);
                                       },
-                                icon: const Icon(Icons.delete_outline, size: 18),
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 18),
                                 label: const Text('Clear All'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.grey[600],
@@ -435,210 +436,223 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Status Indicator (Open/Closed badge on left)
-            Container(
-              width: 4,
-              height: 80,
-              decoration: BoxDecoration(
-                color: isSlotOpen
-                    ? AppColors.successGreen
-                    : AppColors.errorRed,
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(8),
-                ),
-              ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: MediaQuery.of(context).size.width - 56,
             ),
-            const SizedBox(width: 12),
-            // Time
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              children: [
+                // Status Indicator (Open/Closed badge on left)
+                Container(
+                  width: 4,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: isSlotOpen
+                        ? AppColors.successGreen
+                        : AppColors.errorRed,
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Time
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.access_time,
-                          size: 20, color: AppColors.primaryOrange),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${slot.startTime} - ${slot.endTime}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Open/Closed Chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isSlotOpen
-                              ? AppColors.successGreen.withOpacity(0.2)
-                              : AppColors.errorRed.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSlotOpen
-                                ? AppColors.successGreen
-                                : AppColors.errorRed,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isSlotOpen ? Icons.check_circle : Icons.lock,
-                              size: 12,
-                              color: isSlotOpen
-                                  ? AppColors.successGreen
-                                  : AppColors.errorRed,
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time,
+                              size: 20, color: AppColors.primaryOrange),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${slot.startTime} - ${slot.endTime}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isSlotOpen ? 'OPEN' : 'CLOSED',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                          ),
+                          const SizedBox(width: 8),
+                          // Open/Closed Chip
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isSlotOpen
+                                  ? AppColors.successGreen.withOpacity(0.2)
+                                  : AppColors.errorRed.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
                                 color: isSlotOpen
                                     ? AppColors.successGreen
                                     : AppColors.errorRed,
                               ),
                             ),
-                          ],
-                        ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isSlotOpen ? Icons.check_circle : Icons.lock,
+                                  size: 12,
+                                  color: isSlotOpen
+                                      ? AppColors.successGreen
+                                      : AppColors.errorRed,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isSlotOpen ? 'OPEN' : 'CLOSED',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSlotOpen
+                                        ? AppColors.successGreen
+                                        : AppColors.errorRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Orders progress
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${slot.currentOrders}/${slot.capacity} booked',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textGrey,
+                                ),
+                              ),
+                              if (isSlotFull)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.errorRed.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'FULL',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.errorRed,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: slot.capacity > 0
+                                  ? slot.currentOrders / slot.capacity
+                                  : 0,
+                              minHeight: 6,
+                              backgroundColor: Colors.grey[300],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isSlotFull
+                                    ? AppColors.errorRed
+                                    : AppColors.successGreen,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  // Orders progress
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${slot.currentOrders}/${slot.capacity} booked',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textGrey,
-                            ),
-                          ),
-                          if (isSlotFull)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.errorRed.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'FULL',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.errorRed,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: slot.capacity > 0
-                              ? slot.currentOrders / slot.capacity
-                              : 0,
-                          minHeight: 6,
-                          backgroundColor: Colors.grey[300],
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isSlotFull
+                ),
+                const SizedBox(width: 12),
+
+                // Available Slots Badge
+                SizedBox(
+                  width: 70,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isSlotFull
+                          ? AppColors.errorRed.withOpacity(0.1)
+                          : AppColors.successGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$availableSlots',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: isSlotFull
                                 ? AppColors.errorRed
                                 : AppColors.successGreen,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Available Slots Badge
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isSlotFull
-                    ? AppColors.errorRed.withOpacity(0.1)
-                    : AppColors.successGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '$availableSlots',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: isSlotFull
-                          ? AppColors.errorRed
-                          : AppColors.successGreen,
+                        Text(
+                          'Available',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSlotFull
+                                ? AppColors.errorRed
+                                : AppColors.successGreen,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    'Available',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isSlotFull
-                          ? AppColors.errorRed
-                          : AppColors.successGreen,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Edit button
-            PopupMenuButton(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  child: const Row(
-                    children: [
-                      Icon(Icons.edit, size: 18),
-                      SizedBox(width: 8),
-                      Text('Edit Capacity'),
-                    ],
-                  ),
-                  onTap: () =>
-                      _showEditCapacityDialog(context, slot, timeSlotService),
                 ),
-                PopupMenuItem(
-                  child: Row(
-                    children: [
-                      Icon(
-                        slot.isAvailable ? Icons.close : Icons.check,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(slot.isAvailable ? 'Close Slot' : 'Open Slot'),
-                    ],
+                const SizedBox(width: 8),
+
+                // Edit button
+                PopupMenuButton(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onTap: () async {
-                    await timeSlotService.toggleSlotAvailability(
-                        slot.id, !slot.isAvailable);
-                    await timeSlotService.getMyTimeSlots(date: _selectedDate);
-                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      child: const Row(
+                        children: [
+                          Icon(Icons.edit, size: 18),
+                          SizedBox(width: 8),
+                          Text('Edit Capacity'),
+                        ],
+                      ),
+                      onTap: () => _showEditCapacityDialog(
+                          context, slot, timeSlotService),
+                    ),
+                    PopupMenuItem(
+                      child: Row(
+                        children: [
+                          Icon(
+                            slot.isAvailable ? Icons.close : Icons.check,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(slot.isAvailable ? 'Close Slot' : 'Open Slot'),
+                        ],
+                      ),
+                      onTap: () async {
+                        await timeSlotService.toggleSlotAvailability(
+                            slot.id, !slot.isAvailable);
+                        await timeSlotService.getMyTimeSlots(
+                            date: _selectedDate);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -783,9 +797,8 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                     : 'All time slots will be available for booking',
                 style: TextStyle(
                   fontSize: 12,
-                  color: closeSlots
-                      ? AppColors.errorRed
-                      : AppColors.successGreen,
+                  color:
+                      closeSlots ? AppColors.errorRed : AppColors.successGreen,
                 ),
               ),
             ),

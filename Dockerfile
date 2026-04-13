@@ -1,23 +1,26 @@
-# Build backend from root level
+# Build stage for backend service
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy backend package files
+# Copy package files
 COPY backend/package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install production dependencies only
+RUN npm ci --only=production && npm cache clean --force
 
-# Copy backend application
+# Copy application code
 COPY backend/ .
+
+# Create uploads directory
+RUN mkdir -p uploads
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Start application
+# Run application
 CMD ["node", "server.js"]

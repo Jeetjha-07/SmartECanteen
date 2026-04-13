@@ -3,7 +3,7 @@
 ## Setup Instructions
 
 ### 1. Prerequisites
-- Node.js 16+ installed
+- Node.js 18+ installed
 - MongoDB instance (Atlas or local)
 - Firebase project with service account
 
@@ -20,13 +20,12 @@ npm install
 # Copy example file
 cp .env.example .env
 
-# Edit .env with your credentials:
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/smartcanteen
-PORT=3000
-NODE_ENV=development
-FIREBASE_PROJECT_ID=smartcanteen-6764c
-FIREBASE_PRIVATE_KEY="your-private-key"
-FIREBASE_CLIENT_EMAIL=your-email@smartcanteen-6764c.iam.gserviceaccount.com
+# Edit .env with your credentials
+# Required variables:
+# - MONGODB_URI: MongoDB connection string
+# - JWT_SECRET: Random secret key (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+# - CLOUDINARY_*: Image storage credentials
+# - RAZORPAY_*: Payment gateway credentials
 ```
 
 ### 4. Running the Backend
@@ -43,7 +42,36 @@ npm start
 
 Server runs on `http://localhost:3000`
 
-## 🚀 Deployment
+## 🐳 Docker Deployment
+
+### Development (with live reloading)
+```bash
+docker-compose up
+```
+
+### Production
+```bash
+# Create .env file with production values
+cp .env.example .env
+# Edit .env with your production credentials
+
+# Run with production compose file
+docker-compose -f docker-compose.prod.yml up -d
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+```
+
+### Build and push to registry (optional)
+```bash
+docker build -t your-registry/smartcanteen-backend:latest .
+docker push your-registry/smartcanteen-backend:latest
+```
+
+## 🚀 Deployment Options
 
 ### Deploy to Render
 For production deployment to Render.com, follow the complete guide:
