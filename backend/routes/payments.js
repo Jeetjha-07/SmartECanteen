@@ -7,11 +7,51 @@ const { JWT_SECRET } = require('../config/jwt');
 
 const router = express.Router();
 
+// ✅ Validate Razorpay credentials on startup
+const validateRazorpayCredentials = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID?.trim();
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
+
+  console.log('🔐 Razorpay Credentials Validation:');
+  console.log(`   Key ID: ${keyId ? '✓ Present' : '❌ MISSING'} (${keyId?.length || 0} chars)`);
+  console.log(`   Key Secret: ${keySecret ? '✓ Present' : '❌ MISSING'} (${keySecret?.length || 0} chars)`);
+
+  if (!keyId || !keySecret) {
+    console.error('❌ CRITICAL: Razorpay credentials not found in environment variables!');
+    console.error('   Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env file');
+    console.error('   Get your keys from: https://dashboard.razorpay.com/app/keys');
+  } else if (keyId === 'rzp_test_YOUR_TEST_KEY' || keySecret === 'YOUR_KEY_SECRET') {
+    console.error('❌ CRITICAL: Razorpay credentials are still using placeholder values!');
+    console.error('   Replace with actual credentials from https://dashboard.razorpay.com/app/keys');
+  } else if (keySecret.length < 30) {
+    console.warn('⚠️  WARNING: KEY_SECRET seems too short. Valid secrets are typically 40+ characters');
+  } else {
+    console.log('✅ Razorpay credentials appear valid');
+  }
+};
+
 // Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_YOUR_TEST_KEY',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET',
-});
+let razorpay;
+try {
+  validateRazorpayCredentials();
+  
+  const keyId = process.env.RAZORPAY_KEY_ID?.trim();
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
+  
+  if (keyId && keySecret && keyId !== 'rzp_test_YOUR_TEST_KEY' && keySecret !== 'YOUR_KEY_SECRET') {
+    razorpay = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+    console.log('✅ Razorpay SDK initialized successfully');
+  } else {
+    console.error('❌ Cannot initialize Razorpay - invalid or missing credentials');
+    razorpay = null;
+  }
+} catch (error) {
+  console.error('❌ Error initializing Razorpay:', error.message);
+  razorpay = null;
+}
 
 // Middleware to verify JWT
 const verifyJWT = (req, res, next) => {
@@ -34,6 +74,15 @@ const verifyJWT = (req, res, next) => {
  */
 router.post('/create-order', verifyJWT, async (req, res) => {
   try {
+    // Check if Razorpay is initialized
+    if (!razorpay) {
+      console.error('❌ Razorpay SDK not initialized - invalid credentials');
+      return res.status(500).json({
+        error: 'Payment gateway not configured',
+        details: 'Razorpay credentials are missing or invalid. Please contact support.',
+      });
+    }
+
     const { orderId, amount, currency = 'INR' } = req.body;
 
     if (!orderId || !amount) {
@@ -43,6 +92,8 @@ router.post('/create-order', verifyJWT, async (req, res) => {
     }
 
     console.log(`💳 Creating Razorpay order for: ${orderId}, Amount: ₹${amount / 100}`);
+    console.log(`   Currency: ${currency}`);
+    console.log(`   User ID: ${req.user?.userId}`);
 
     // Create Razorpay order
     const options = {
@@ -55,6 +106,8 @@ router.post('/create-order', verifyJWT, async (req, res) => {
       },
     };
 
+    console.log(`   Sending to Razorpay API with options:`, JSON.stringify(options, null, 2));
+
     const razorpayOrder = await razorpay.orders.create(options);
 
     console.log(`✅ Razorpay order created: ${razorpayOrder.id}`);
@@ -64,13 +117,32 @@ router.post('/create-order', verifyJWT, async (req, res) => {
       razorpayOrderId: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      key: process.env.RAZORPAY_KEY_ID || 'rzp_test_YOUR_TEST_KEY',
+      key: process.env.RAZORPAY_KEY_ID?.trim() || 'rzp_test_YOUR_TEST_KEY',
     });
   } catch (error) {
-    console.error('❌ Error creating Razorpay order:', error);
-    res.status(500).json({
-      error: 'Failed to create payment order',
-      details: error.message,
+    console.error('❌ Error creating Razorpay order:');
+    console.error(`   Status Code: ${error.statusCode}`);
+    console.error(`   Error Message: ${error.message}`);
+    console.error(`   Error Description: ${error.error?.description || 'N/A'}`);
+    console.error(`   Full Error:`, error);
+
+    // Provide specific error messages for common issues
+    const statusCode = error.statusCode || 500;
+    let userMessage = 'Failed to create payment order';
+
+    if (statusCode === 401 || error.message?.includes('Authentication')) {
+      userMessage = 'Payment gateway authentication failed. Please check API credentials.';
+      console.error('🔐 This usually means: Invalid API Key ID or Secret');
+    } else if (statusCode === 400 || error.message?.includes('BAD_REQUEST')) {
+      userMessage = 'Invalid payment parameters. ' + (error.error?.description || '');
+    } else if (statusCode === 429) {
+      userMessage = 'Too many requests. Please try again later.';
+    }
+
+    res.status(statusCode === 401 ? 401 : 500).json({
+      error: userMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      statusCode: error.statusCode,
     });
   }
 });
@@ -96,10 +168,20 @@ router.post('/verify-payment', verifyJWT, async (req, res) => {
 
     console.log(`✔️ Verifying payment: ${razorpay_payment_id}`);
 
-    // Verify signature
+    // Verify signature using the correct key secret
+    const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
+    if (!keySecret || keySecret === 'YOUR_KEY_SECRET') {
+      console.error('❌ Cannot verify signature - invalid KEY_SECRET');
+      return res.status(500).json({
+        error: 'Payment verification failed',
+        details: 'Gateway configuration error',
+        success: false,
+      });
+    }
+
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET')
+      .createHmac('sha256', keySecret)
       .update(body)
       .digest('hex');
 
