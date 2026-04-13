@@ -361,26 +361,24 @@ router.patch('/:id/availability', verifyJWT, async (req, res) => {
 
     console.log('✅ Found item:', item.name);
 
-    // Get restaurant ID from User profile
-    const user = await User.findById(req.user.userId);
-    if (!user || !user.restaurantId) {
-      return res.status(400).json({ error: 'Restaurant not fully registered. Complete onboarding first.' });
+    // Get restaurant by userId to verify it exists and shop is registered (consistent with create/update/delete)
+    const restaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
+    if (!restaurant) {
+      return res.status(400).json({ error: 'Restaurant not found. Please register your restaurant first.' });
     }
 
-    const restaurantId = user.restaurantId;
+    if (!restaurant.shopRegistered) {
+      return res.status(400).json({ 
+        error: 'Shop must be registered first before modifying menu items. Please complete shop registration.' 
+      });
+    }
+
+    const restaurantId = req.user.userId;
     
     // Verify ownership
     if (item.restaurantId !== restaurantId) {
       console.log('❌ Ownership mismatch:', item.restaurantId, 'vs', restaurantId);
       return res.status(403).json({ error: 'You can only toggle your own items' });
-    }
-
-    // Verify restaurant exists (no need for full registration for toggling)
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
-      return res.status(400).json({ 
-        error: 'Restaurant not found' 
-      });
     }
 
     console.log('🔄 Updating item isAvailable to:', isAvailable);
