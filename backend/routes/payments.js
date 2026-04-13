@@ -197,21 +197,40 @@ router.post('/verify-payment', verifyJWT, async (req, res) => {
 
     console.log(`✅ Payment signature verified!`);
 
-    // Update order with payment details
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        paymentMethod: 'Razorpay',
-        paymentStatus: 'Completed',
-        razorpay_payment_id: razorpay_payment_id,
-        razorpay_order_id: razorpay_order_id,
-        paymentVerifiedAt: new Date(),
-      },
-      { new: true }
-    );
+    // Find order using receipt field (which contains the original orderId)
+    // NOT using MongoDB _id since orderId might be the Razorpay order ID
+    let order = await Order.findOne({ receipt: orderId }) || await Order.findOne({ _id: orderId });
 
     if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
+      console.warn(`⚠️  Order not found with receipt or ID: ${orderId}`);
+      console.log(`   Attempting to create/update order with Razorpay details...`);
+      
+      // If order doesn't exist, create it with payment details
+      order = await Order.create({
+        razorpay_payment_id: razorpay_payment_id,
+        razorpay_order_id: razorpay_order_id,
+        receipt: orderId,
+        paymentMethod: 'Razorpay',
+        paymentStatus: 'Completed',
+        paymentVerifiedAt: new Date(),
+      });
+    } else {
+      // Update existing order with payment details
+      order = await Order.findByIdAndUpdate(
+        order._id,
+        {
+          paymentMethod: 'Razorpay',
+          paymentStatus: 'Completed',
+          razorpay_payment_id: razorpay_payment_id,
+          razorpay_order_id: razorpay_order_id,
+          paymentVerifiedAt: new Date(),
+        },
+        { new: true }
+      );
+    }
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order creation/update failed' });
     }
 
     console.log(`✅ Order updated with payment: ${order._id}`);
