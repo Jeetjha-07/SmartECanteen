@@ -197,13 +197,18 @@ router.post('/verify-payment', verifyJWT, async (req, res) => {
 
     console.log(`✅ Payment signature verified!`);
 
-    // Find order using receipt field (which contains the original orderId)
-    // NOT using MongoDB _id since orderId might be the Razorpay order ID
-    let order = await Order.findOne({ receipt: orderId }) || await Order.findOne({ _id: orderId });
+    console.log(`   Looking for order with receipt: ${orderId}`);
+
+    // Try to find order by receipt field
+    let order = await Order.findOne({ receipt: orderId });
 
     if (!order) {
-      console.warn(`⚠️  Order not found with receipt or ID: ${orderId}`);
-      console.log(`   Attempting to create/update order with Razorpay details...`);
+      // Also try to find by razorpay_order_id in case it was already created
+      order = await Order.findOne({ razorpay_order_id: razorpay_order_id });
+    }
+
+    if (!order) {
+      console.log(`   ⚠️  Order not found - creating new order with payment details`);
       
       // If order doesn't exist, create it with payment details
       order = await Order.create({
@@ -214,7 +219,11 @@ router.post('/verify-payment', verifyJWT, async (req, res) => {
         paymentStatus: 'Completed',
         paymentVerifiedAt: new Date(),
       });
+
+      console.log(`   ✅ Order created with ID: ${order._id}`);
     } else {
+      console.log(`   ✅ Order found, updating payment details...`);
+      
       // Update existing order with payment details
       order = await Order.findByIdAndUpdate(
         order._id,
