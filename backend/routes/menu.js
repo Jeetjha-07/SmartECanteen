@@ -375,11 +375,11 @@ router.patch('/:id/availability', verifyJWT, async (req, res) => {
       return res.status(403).json({ error: 'You can only toggle your own items' });
     }
 
-    // Check if shop is registered
+    // Verify restaurant exists (no need for full registration for toggling)
     const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant || !restaurant.shopRegistered) {
+    if (!restaurant) {
       return res.status(400).json({ 
-        error: 'Shop must be registered first before modifying menu items. Please complete shop registration.' 
+        error: 'Restaurant not found' 
       });
     }
 
