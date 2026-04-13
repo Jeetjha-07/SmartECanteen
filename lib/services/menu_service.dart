@@ -129,7 +129,8 @@ class MenuService extends ChangeNotifier {
       print('   Sending to backend with URL: $imageUrl');
       final result = await ApiService.createMenuItem(itemData);
       print('✅ Menu item added: ${result['item']?['_id'] ?? 'Unknown'}');
-      print('   Stored imageUrl in DB: ${result['item']?['imageUrl'] ?? 'NOT SET'}');
+      print(
+          '   Stored imageUrl in DB: ${result['item']?['imageUrl'] ?? 'NOT SET'}');
       return result;
     } catch (e) {
       print('❌ Error adding menu item: $e');
@@ -165,7 +166,7 @@ class MenuService extends ChangeNotifier {
   }
 
   // Toggle item availability
-  static Future<bool> toggleAvailability(
+  static Future<Map<String, dynamic>> toggleAvailability(
       String itemId, bool isAvailable) async {
     try {
       print('🔄 Toggling availability for item $itemId to: $isAvailable');
@@ -173,10 +174,10 @@ class MenuService extends ChangeNotifier {
           await ApiService.toggleMenuItemAvailability(itemId, isAvailable);
       print(
           '✅ Availability toggled: ${result['name']} is now ${isAvailable ? 'Available' : 'Out of Stock'}');
-      return true;
+      return {'success': true, 'data': result};
     } catch (e) {
       print('❌ Error toggling availability: $e');
-      return false;
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -208,8 +209,7 @@ class MenuService extends ChangeNotifier {
       final request = http.MultipartRequest('POST', uri);
 
       // Add headers
-      request.headers['Authorization'] =
-          'Bearer ${ApiService.getAuthToken()}';
+      request.headers['Authorization'] = 'Bearer ${ApiService.getAuthToken()}';
       // Add file
       request.files.add(
         http.MultipartFile.fromBytes(

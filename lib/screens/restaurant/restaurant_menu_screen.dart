@@ -284,10 +284,35 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                                 onDelete: () =>
                                     _deleteItem(context, filtered[index]),
                                 onToggle: (val) async {
-                                  await MenuService.toggleAvailability(
+                                  final result = await MenuService.toggleAvailability(
                                       filtered[index].id, val);
-                                  // Refresh menu after toggle
-                                  _refreshMenu();
+                                  
+                                  if (mounted) {
+                                    if (result['success']) {
+                                      // Refresh menu after toggle
+                                      _refreshMenu();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            val ? '${filtered[index].name} is now available' : '${filtered[index].name} is now unavailable',
+                                          ),
+                                          backgroundColor: AppColors.successGreen,
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    } else {
+                                      // Show error and refresh to revert
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to update item: ${result['error']}'),
+                                          backgroundColor: AppColors.errorRed,
+                                          duration: const Duration(seconds: 3),
+                                        ),
+                                      );
+                                      // Refresh to revert the UI
+                                      _refreshMenu();
+                                    }
+                                  }
                                 },
                               ),
                             ),
@@ -590,7 +615,7 @@ class _MenuItemCard extends StatefulWidget {
   final FoodItem item;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final ValueChanged<bool> onToggle;
+  final Future<void> Function(bool) onToggle;
 
   const _MenuItemCard({
     required this.item,
@@ -625,11 +650,22 @@ class _MenuItemCardState extends State<_MenuItemCard> {
   Future<void> _toggleAvailability(bool newValue) async {
     setState(() => _isToggling = true);
 
+    // Store previous value in case we need to revert
+    final previousValue = _isAvailable;
+    
     // Update UI immediately for better UX
     setState(() => _isAvailable = newValue);
 
-    // Call the parent callback
-    widget.onToggle(newValue);
+    try {
+      // Call the parent callback and await it
+      await widget.onToggle(newValue);
+    } catch (e) {
+      // Revert on error
+      if (mounted) {
+        setState(() => _isAvailable = previousValue);
+      }
+      print('Error toggling availability: $e');
+    }
 
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {

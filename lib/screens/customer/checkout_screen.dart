@@ -369,7 +369,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         if (v == null || v.isEmpty) {
                           return 'Please enter phone number';
                         }
-                        if (v.length < 10) {
+                        if (v.length < 10 || v.length > 10) {
                           return 'Enter a valid 10-digit number';
                         }
                         return null;
