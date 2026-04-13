@@ -158,6 +158,9 @@ router.post('/verify-payment', verifyJWT, async (req, res) => {
       razorpay_payment_id,
       razorpay_signature,
       orderId,
+      totalAmount,
+      restaurantId,
+      customerId,
     } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -210,11 +213,24 @@ router.post('/verify-payment', verifyJWT, async (req, res) => {
     if (!order) {
       console.log(`   ⚠️  Order not found - creating new order with payment details`);
       
-      // If order doesn't exist, create it with payment details
+      // If order doesn't exist, create it with payment details and required fields
+      if (!totalAmount || !restaurantId || !customerId) {
+        console.error('❌ Missing required fields for order creation:');
+        console.error(`   totalAmount: ${totalAmount}`);
+        console.error(`   restaurantId: ${restaurantId}`);
+        console.error(`   customerId: ${customerId}`);
+        return res.status(400).json({
+          error: 'Missing required fields: totalAmount, restaurantId, customerId',
+          success: false,
+        });
+      }
+      
       order = await Order.create({
+        customerId: customerId,
+        restaurantId: restaurantId,
+        totalAmount: totalAmount,
         razorpay_payment_id: razorpay_payment_id,
         razorpay_order_id: razorpay_order_id,
-        receipt: orderId,
         paymentMethod: 'Razorpay',
         paymentStatus: 'Completed',
         paymentVerifiedAt: new Date(),
