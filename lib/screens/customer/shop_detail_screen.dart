@@ -230,6 +230,32 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     return completeUrl;
   }
 
+  // Build restaurant image widget
+  Widget _buildRestaurantImage() {
+    if (widget.restaurant.imageUrl.isEmpty) {
+      return Icon(Icons.restaurant, size: 100, color: Colors.grey[400]);
+    }
+
+    final completeUrl = _getCompleteImageUrl(widget.restaurant.imageUrl);
+
+    if (completeUrl.isEmpty) {
+      return Icon(Icons.restaurant, size: 100, color: Colors.grey[400]);
+    }
+
+    return Image.network(
+      completeUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('❌ Restaurant image error: $completeUrl');
+        return Icon(Icons.restaurant, size: 100, color: Colors.grey[400]);
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
   // Build image widget with proper error handling
   Widget _buildItemImage(double width, double height, String imageUrl) {
     final completeUrl = _getCompleteImageUrl(imageUrl);

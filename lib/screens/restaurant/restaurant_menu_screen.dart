@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import '../../services/menu_service.dart';
 import '../../services/auth_service.dart';
-import '../../services/api_service.dart';
 import '../../models/food_item.dart';
 import '../../utils/app_colors.dart';
 import 'restaurant_shop_registration_screen.dart';
@@ -17,8 +16,7 @@ String _getCompleteImageUrl(String relativeUrl) {
   }
 
   // If it's already a complete URL (HTTP/HTTPS), return as-is
-  if (relativeUrl.startsWith('http://') ||
-      relativeUrl.startsWith('https://')) {
+  if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
     print('✅ Already a complete URL: $relativeUrl');
     return relativeUrl;
   }
