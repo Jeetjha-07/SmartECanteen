@@ -340,10 +340,26 @@ router.delete('/:id', verifyJWT, async (req, res) => {
 // Toggle availability
 router.patch('/:id/availability', verifyJWT, async (req, res) => {
   try {
+    console.log('🔄 Toggle availability request for item:', req.params.id);
+    console.log('📦 Request body:', req.body);
+
+    const { isAvailable } = req.body;
+
+    // Validate that isAvailable is provided and is a boolean
+    if (isAvailable === undefined || isAvailable === null) {
+      return res.status(400).json({ error: 'isAvailable field is required and must be a boolean value' });
+    }
+
+    if (typeof isAvailable !== 'boolean') {
+      return res.status(400).json({ error: 'isAvailable must be a boolean (true or false)' });
+    }
+
     const item = await MenuItem.findById(req.params.id);
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
+
+    console.log('✅ Found item:', item.name);
 
     // Get restaurant ID from User profile
     const user = await User.findById(req.user.userId);
@@ -355,6 +371,7 @@ router.patch('/:id/availability', verifyJWT, async (req, res) => {
     
     // Verify ownership
     if (item.restaurantId !== restaurantId) {
+      console.log('❌ Ownership mismatch:', item.restaurantId, 'vs', restaurantId);
       return res.status(403).json({ error: 'You can only toggle your own items' });
     }
 
@@ -366,14 +383,22 @@ router.patch('/:id/availability', verifyJWT, async (req, res) => {
       });
     }
 
-    const { isAvailable } = req.body;
+    console.log('🔄 Updating item isAvailable to:', isAvailable);
+
     const updatedItem = await MenuItem.findByIdAndUpdate(
       req.params.id,
-      { isAvailable, updatedAt: new Date() },
-      { new: true }
+      { 
+        isAvailable: isAvailable,
+        updatedAt: new Date() 
+      },
+      { new: true, runValidators: true }
     );
+
+    console.log('✅ Item updated successfully:', updatedItem.name, 'isAvailable:', updatedItem.isAvailable);
+
     res.json(updatedItem);
   } catch (error) {
+    console.error('❌ Error toggling item availability:', error);
     res.status(500).json({ error: error.message });
   }
 });
