@@ -414,25 +414,43 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                                     );
                                   },
                                 )
-                              : CachedNetworkImage(
-                                  imageUrl: existingImageUrl ?? '',
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                  errorWidget: (_, __, ___) => const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.broken_image,
-                                          color: AppColors.errorRed),
-                                      SizedBox(height: 8),
-                                      Text('Invalid Image URL',
-                                          style: TextStyle(
-                                              color: AppColors.errorRed,
-                                              fontSize: 12)),
-                                    ],
-                                  ),
-                                ),
+                              : existingImageUrl != null &&
+                                      existingImageUrl!.isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: _getCompleteImageUrl(
+                                          existingImageUrl!),
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, __) => const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                      errorWidget: (_, __, ___) => const Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.broken_image,
+                                              color: AppColors.errorRed),
+                                          SizedBox(height: 8),
+                                          Text('Invalid Image URL',
+                                              style: TextStyle(
+                                                  color: AppColors.errorRed,
+                                                  fontSize: 12)),
+                                        ],
+                                      ),
+                                    )
+                                  : const Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.image_outlined,
+                                            size: 48,
+                                            color: AppColors.primaryOrange),
+                                        SizedBox(height: 8),
+                                        Text('No existing image',
+                                            style: TextStyle(
+                                                color: AppColors.textGrey,
+                                                fontSize: 12)),
+                                      ],
+                                    ),
                     ),
                   ),
 
@@ -752,22 +770,18 @@ class _MenuItemCardState extends State<_MenuItemCard> {
   // Helper method to construct complete image URL
   String _getCompleteImageUrl(String relativeUrl) {
     if (relativeUrl.isEmpty) {
-      print('⚠️ Image URL is empty for item');
+      print('⚠️ Image URL is empty');
       return '';
     }
-    if (relativeUrl.startsWith('http')) {
-      // Already a complete URL (Cloudinary)
-      print('✅ Using complete URL: $relativeUrl');
+    
+    // If it's already a complete URL (HTTP/HTTPS), return as-is
+    if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
+      print('✅ Already a complete URL: $relativeUrl');
       return relativeUrl;
     }
-    // Skip /uploads/ paths (they don't exist on Render's ephemeral filesystem)
-    if (relativeUrl.startsWith('/uploads')) {
-      print('⚠️ Skipping ephemeral /uploads/ path: $relativeUrl');
-      return ''; // Show placeholder instead
-    }
-    // Use server base URL (not /api) for static files
-    final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
-    print('🖼️ Building complete URL: $relativeUrl -> $completeUrl');
-    return completeUrl;
+    
+    // Skip any non-HTTP URLs or placeholders
+    print('❌ Invalid URL format (not HTTP): $relativeUrl');
+    return '';
   }
 }

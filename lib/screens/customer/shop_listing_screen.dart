@@ -298,7 +298,18 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                 height: 150,
                 width: double.infinity,
                 color: Colors.grey[300],
-                child: _buildRestaurantImage(restaurant.imageUrl),
+                child: restaurant.imageUrl.isNotEmpty
+                    ? Image.network(
+                        _getCompleteImageUrl(restaurant.imageUrl),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.restaurant, size: 50),
+                          );
+                        },
+                      )
+                    : const Icon(Icons.restaurant, size: 50),
               ),
             ),
             // Restaurant Info
@@ -409,39 +420,6 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
     final completeUrl = '${ApiService.serverBaseUrl}$relativeUrl';
     print('🖼️ [ShopListing] Building URL: $relativeUrl -> $completeUrl');
     return completeUrl;
-  }
-
-  Widget _buildRestaurantImage(String imageUrl) {
-    if (imageUrl.isEmpty) {
-      print('⚠️ [ShopListing] Empty image URL');
-      return const Icon(Icons.restaurant, size: 50);
-    }
-
-    final completeUrl = _getCompleteImageUrl(imageUrl);
-
-    // If URL is empty after processing, show placeholder
-    if (completeUrl.isEmpty) {
-      print('⚠️ [ShopListing] Image URL resolved to empty string');
-      return const Icon(Icons.restaurant, size: 50);
-    }
-
-    // Only load valid HTTP/HTTPS URLs
-    if (!completeUrl.startsWith('http')) {
-      print('⚠️ [ShopListing] Invalid image URL scheme: $completeUrl');
-      return const Icon(Icons.restaurant, size: 50);
-    }
-
-    return Image.network(
-      completeUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        print('❌ [ShopListing] Image load error: $error');
-        return Container(
-          color: Colors.grey[300],
-          child: const Icon(Icons.restaurant, size: 50),
-        );
-      },
-    );
   }
 
   void _showFilterBottomSheet() {

@@ -158,7 +158,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               height: 200,
               width: double.infinity,
               color: Colors.grey[300],
-              child: _buildRestaurantImage(widget.restaurant.imageUrl),
+              child: _buildRestaurantImage(),
             ),
           ),
           const SizedBox(height: 12),
@@ -230,63 +230,52 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     return completeUrl;
   }
 
-  Widget _buildRestaurantImage(String imageUrl) {
-    if (imageUrl.isEmpty) {
-      print('⚠️ [ShopDetail] Empty restaurant image URL');
-      return const Icon(Icons.restaurant, size: 80);
-    }
-
+  // Build image widget with proper error handling
+  Widget _buildItemImage(double width, double height, String imageUrl) {
     final completeUrl = _getCompleteImageUrl(imageUrl);
-
+    
+    // If URL is empty or invalid, show placeholder
     if (completeUrl.isEmpty) {
-      print('⚠️ [ShopDetail] Restaurant image URL resolved to empty string');
-      return const Icon(Icons.restaurant, size: 80);
+      return Container(
+        width: width,
+        height: height,
+        color: Colors.grey[300],
+        child: const Icon(Icons.fastfood, color: Colors.grey),
+      );
     }
 
-    if (!completeUrl.startsWith('http')) {
-      print(
-          '⚠️ [ShopDetail] Invalid restaurant image URL scheme: $completeUrl');
-      return const Icon(Icons.restaurant, size: 80);
+    // For Cloudinary URLs (http/https), use direct Image.network with error handling
+    if (completeUrl.startsWith('http')) {
+      return Image.network(
+        completeUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Image error loading: $completeUrl');
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey[200],
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        },
+      );
     }
 
-    return Image.network(
-      completeUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        print('❌ [ShopDetail] Restaurant image load error: $error');
-        return Container(
-          color: Colors.grey[300],
-          child: const Icon(Icons.restaurant, size: 80),
-        );
-      },
-    );
-  }
-
-  Widget _buildMenuItemImage(String imageUrl) {
-    if (imageUrl.isEmpty) {
-      print('⚠️ [ShopDetail] Empty menu item image URL');
-      return const Icon(Icons.fastfood);
-    }
-
-    final completeUrl = _getCompleteImageUrl(imageUrl);
-
-    if (completeUrl.isEmpty) {
-      print('⚠️ [ShopDetail] Menu item image URL resolved to empty string');
-      return const Icon(Icons.fastfood);
-    }
-
-    if (!completeUrl.startsWith('http')) {
-      print('⚠️ [ShopDetail] Invalid menu item image URL scheme: $completeUrl');
-      return const Icon(Icons.fastfood);
-    }
-
-    return Image.network(
-      completeUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        print('❌ [ShopDetail] Menu item image load error: $error');
-        return const Icon(Icons.fastfood);
-      },
+    // Fallback
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.grey[300],
+      child: const Icon(Icons.fastfood, color: Colors.grey),
     );
   }
 
@@ -307,7 +296,9 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   height: 80,
                   width: 80,
                   color: Colors.grey[300],
-                  child: _buildMenuItemImage(item.imageUrl),
+                  child: item.imageUrl.isNotEmpty
+                      ? _buildItemImage(80, 80, item.imageUrl)
+                      : const Icon(Icons.fastfood),
                 ),
               ),
               const SizedBox(width: 12),
@@ -451,7 +442,9 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                     height: 150,
                     width: double.infinity,
                     color: Colors.grey[300],
-                    child: _buildMenuItemImage(item.imageUrl),
+                    child: item.imageUrl.isNotEmpty
+                        ? _buildItemImage(double.infinity, 150, item.imageUrl)
+                        : const Icon(Icons.fastfood, size: 80),
                   ),
                 ),
               ),

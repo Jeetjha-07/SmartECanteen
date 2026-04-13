@@ -3,71 +3,29 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 const MenuItem = require('../models/MenuItem');
 const Restaurant = require('../models/Restaurant');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
-const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Helper function to delete old image file
-const deleteImageFile = (imageUrl) => {
-  if (!imageUrl) return;
-  
-  // Don't try to delete URLs that are not local files or placeholders
-  if (imageUrl.startsWith('http') || imageUrl.includes('placeholder')) {
-    return;
-  }
-
-  try {
-    // Construct proper file path
-    // imageUrl is like: "/uploads/1234567890-randomNumber.jpg"
-    const filename = path.basename(imageUrl); // Extract filename
-    const filePath = path.join(uploadsDir, filename);
-
-    // Security check: ensure file is in uploads directory
-    const realPath = path.resolve(filePath);
-    const realUploadsDir = path.resolve(uploadsDir);
-    
-    if (!realPath.startsWith(realUploadsDir)) {
-      console.error(`⚠️  Security warning: Attempted to delete file outside uploads directory: ${filePath}`);
-      return;
-    }
-
-    // Check if file exists before deleting
-    if (fs.existsSync(filePath)) {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.error(`❌ Error deleting image file ${filePath}:`, err.message);
-        } else {
-          console.log(`✅ Successfully deleted old image: ${filename}`);
-        }
-      });
-    } else {
-      console.warn(`⚠️  Image file not found for deletion: ${filePath}`);
-    }
-  } catch (error) {
-    console.error(`⚠️  Error in deleteImageFile:`, error.message);
-  }
-};
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // Create unique filename with timestamp
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+console.log('☁️  Cloudinary configured:', {
+  cloudName: process.env.CLOUDINARY_CLOUD_NAME ? '✅' : '❌',
+  apiKey: process.env.CLOUDINARY_API_KEY ? '✅' : '❌',
+  apiSecret: process.env.CLOUDINARY_API_SECRET ? '✅' : '❌',
+});
+
+// Configure multer for memory storage (we'll upload to Cloudinary)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -79,12 +37,12 @@ const upload = multer({
     console.log(`MIME type received: "${file.mimetype}"`);
     console.log(`Extension: ${path.extname(file.originalname)}`);
     
-    // Check file extension - more lenient
+    // Check file extension
     const ext = path.extname(file.originalname).toLowerCase();
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const extname = validExtensions.includes(ext);
     
-    // Check MIME type - accept any image/* type
+    // Check MIME type
     const mimetype = file.mimetype && file.mimetype.startsWith('image/');
     
     console.log(`Extension valid: ${extname} (${ext})`);
@@ -99,6 +57,32 @@ const upload = multer({
     }
   },
 });
+
+// Helper function to upload image to Cloudinary
+async function uploadToCloudinary(fileBuffer, fileName) {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'auto',
+        public_id: `smartcanteen/menu/${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        folder: 'smartcanteen/menu',
+        quality: 'auto',
+        fetch_format: 'auto',
+      },
+      (error, result) => {
+        if (error) {
+          console.error('❌ Cloudinary upload error:', error);
+          reject(error);
+        } else {
+          console.log('✅ Cloudinary upload successful:', result.secure_url);
+          resolve(result.secure_url);
+        }
+      }
+    );
+    
+    uploadStream.end(fileBuffer);
+  });
+}
 
 // Middleware to verify JWT token
 const verifyJWT = (req, res, next) => {
@@ -192,34 +176,16 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
   try {
     // Verify it's a restaurant
     if (req.user.role !== 'restaurant') {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(403).json({ error: 'Only restaurants can create menu items' });
     }
 
     // Get restaurant by userId (restaurantId field in Restaurant document)
     const restaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
     if (!restaurant) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(400).json({ error: 'Restaurant not found. Please register your restaurant first.' });
     }
 
     if (!restaurant.shopRegistered) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(400).json({ 
         error: 'Shop must be registered first before adding menu items. Please complete shop registration.' 
       });
@@ -232,12 +198,6 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
     
     // Validate required fields
     if (!name || !price || !category) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(400).json({ error: 'Missing required fields: name, price, category' });
     }
     
@@ -245,13 +205,9 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
     let imageUrl = req.body.imageUrl || ''; // Check if imageUrl is in request body (from /menu/upload endpoint)
     if (req.file) {
       // If file is uploaded directly to this endpoint, upload to Cloudinary
-      console.log(`📤 Uploading file directly to Cloudinary...`);
-      imageUrl = await uploadToCloudinary(
-        req.file.buffer,
-        'smartcanteen/menu',
-        `menu_${restaurantId}_${Date.now()}`
-      );
-      console.log(`📸 Menu item image uploaded to Cloudinary: ${imageUrl}`);
+      console.log(`📤 Uploading ${req.file.originalname} to Cloudinary...`);
+      imageUrl = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+      console.log(`☁️  Image URL: ${imageUrl}`);
     } else if (imageUrl) {
       // If imageUrl is in body (from /menu/upload), use it
       console.log(`📸 Using image URL from body: ${imageUrl}`);
@@ -263,7 +219,7 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
       name: name.trim(),
       description: description?.trim() || '',
       price: Number(price),
-      imageUrl: imageUrl, // Store the uploaded image path
+      imageUrl: imageUrl, // Store the Cloudinary URL
       category: category.trim(),
       preparationTime: preparationTime || 30,
       restaurantId: restaurantId, // Use restaurantId from User profile
@@ -272,12 +228,6 @@ router.post('/', verifyJWT, upload.single('image'), async (req, res) => {
     console.log('✅ Menu item created in MongoDB:', item._id);
     res.status(201).json({ success: true, item });
   } catch (error) {
-    // Clean up uploaded file in case of error
-    if (req.file) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Error deleting file:', err);
-      });
-    }
     console.error('❌ Error creating menu item:', error);
     res.status(500).json({ error: error.message, details: error.stack });
   }
@@ -289,46 +239,22 @@ router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
     // Verify ownership
     const existingItem = await MenuItem.findById(req.params.id);
     if (!existingItem) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(404).json({ error: 'Item not found' });
     }
 
     // Get restaurant by userId to verify ownership
     const restaurant = await Restaurant.findOne({ restaurantId: req.user.userId });
     if (!restaurant) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(400).json({ error: 'Restaurant not found. Please register your restaurant first.' });
     }
 
     const restaurantId = req.user.userId;
     
     if (existingItem.restaurantId !== restaurantId) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(403).json({ error: 'You can only update your own items' });
     }
 
     if (!restaurant.shopRegistered) {
-      // Clean up uploaded file in case of error
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
-      }
       return res.status(400).json({ 
         error: 'Shop must be registered first before modifying menu items. Please complete shop registration.' 
       });
@@ -349,24 +275,13 @@ router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
 
     // Handle image upload if provided
     if (req.file) {
-      // If file is uploaded directly to this endpoint, upload to Cloudinary
-      console.log(`📤 Updating: Uploading file directly to Cloudinary...`);
-      updateData.imageUrl = await uploadToCloudinary(
-        req.file.buffer,
-        'smartcanteen/menu',
-        `menu_${restaurantId}_${Date.now()}`
-      );
-      console.log(`📸 Menu item image updated to Cloudinary: ${updateData.imageUrl}`);
-      
-      // Delete old image from Cloudinary if it exists
-      await deleteFromCloudinary(existingItem.imageUrl);
+      console.log(`📤 Uploading new image to Cloudinary...`);
+      updateData.imageUrl = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+      console.log(`☁️  Image updated: ${updateData.imageUrl}`);
     } else if (req.body.imageUrl && req.body.imageUrl !== existingItem.imageUrl) {
       // If imageUrl is in body (from /menu/upload), use it
       updateData.imageUrl = req.body.imageUrl;
       console.log(`📸 Menu item image updated (from body): ${updateData.imageUrl}`);
-      
-      // Delete old image from Cloudinary if it exists
-      await deleteFromCloudinary(existingItem.imageUrl);
     }
     
     const item = await MenuItem.findByIdAndUpdate(
@@ -377,12 +292,7 @@ router.put('/:id', verifyJWT, upload.single('image'), async (req, res) => {
     
     res.json(item);
   } catch (error) {
-    // Clean up uploaded file in case of error
-    if (req.file) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Error deleting file:', err);
-      });
-    }
+    console.error('❌ Error updating menu item:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -414,10 +324,10 @@ router.delete('/:id', verifyJWT, async (req, res) => {
       });
     }
 
-    // Delete image from Cloudinary before deleting the database record
+    // Delete image file before deleting the database record
     if (item.imageUrl) {
-      console.log(`🗑️  Deleting image from Cloudinary: ${item.name}`);
-      await deleteFromCloudinary(item.imageUrl);
+      console.log(`🗑️  Deleting image for menu item: ${item.name}`);
+      deleteImageFile(item.imageUrl);
     }
 
     await MenuItem.findByIdAndDelete(req.params.id);
@@ -482,49 +392,29 @@ router.post('/upload', verifyJWT, upload.single('image'), async (req, res) => {
     });
 
     if (!restaurant) {
-      // Clean up uploaded file
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Error deleting file:', err);
-      });
       return res.status(400).json({ 
         error: 'Restaurant not found. Please register your restaurant first.' 
       });
     }
 
     if (!restaurant.shopRegistered) {
-      // Clean up uploaded file
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Error deleting file:', err);
-      });
       return res.status(400).json({ 
         error: 'Shop must be registered first before uploading menu item images.' 
       });
     }
 
-    console.log(`📤 Uploading menu item image to Cloudinary...`);
-    console.log(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
-
     // Upload to Cloudinary
-    const cloudinaryUrl = await uploadToCloudinary(
-      req.file.buffer,
-      'smartcanteen/menu',
-      `menu_${user.userId}_${Date.now()}`
-    );
-
-    console.log(`✅ Menu item image uploaded to Cloudinary: ${cloudinaryUrl}`);
+    console.log(`📤 Uploading ${req.file.originalname} to Cloudinary...`);
+    const imageUrl = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+    console.log(`☁️  Image URL: ${imageUrl}`);
 
     res.json({
       success: true,
-      imageUrl: cloudinaryUrl,
-      message: 'Image uploaded successfully to Cloudinary'
+      imageUrl: imageUrl,
+      message: 'Image uploaded successfully'
     });
   } catch (error) {
-    if (req.file) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Error deleting file:', err);
-      });
-    }
-    console.error('❌ Menu upload error:', error);
+    console.error('❌ Upload error:', error);
     res.status(500).json({ error: error.message });
   }
 });
