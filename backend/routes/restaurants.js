@@ -17,7 +17,44 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
+// File validation options - shared between both configs
+const fileValidation = (req, file, cb) => {
+  console.log(`\n📸 ========== FILE UPLOAD VALIDATION ==========`);
+  console.log(`Filename: ${file.originalname}`);
+  console.log(`File size: ${file.size} bytes`);
+  console.log(`MIME type received: "${file.mimetype}"`);
+  console.log(`Extension: ${path.extname(file.originalname)}`);
+  
+  // Check file extension - more lenient
+  const ext = path.extname(file.originalname).toLowerCase();
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+  const extname = validExtensions.includes(ext);
+  
+  // Check MIME type - accept any image/* type
+  const mimetype = file.mimetype && file.mimetype.startsWith('image/');
+  
+  console.log(`Extension valid: ${extname} (${ext})`);
+  console.log(`MIME type valid: ${mimetype}`);
+  console.log(`========================================\n`);
+  
+  if (extname && mimetype) {
+    console.log(`✅ File validation passed!`);
+    return cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'));
+  }
+};
+
+// ✅ Memory storage for /upload endpoint (file stays in memory, directly uploaded to Cloudinary)
+const memoryStorage = multer.memoryStorage();
+const uploadCloudinary = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileValidation,
+});
+
+// Disk storage for other endpoints (if needed later)
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
   },
@@ -29,34 +66,9 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage,
+  storage: diskStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    console.log(`\n📸 ========== FILE UPLOAD VALIDATION ==========`);
-    console.log(`Filename: ${file.originalname}`);
-    console.log(`File size: ${file.size} bytes`);
-    console.log(`MIME type received: "${file.mimetype}"`);
-    console.log(`Extension: ${path.extname(file.originalname)}`);
-    
-    // Check file extension - more lenient
-    const ext = path.extname(file.originalname).toLowerCase();
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
-    const extname = validExtensions.includes(ext);
-    
-    // Check MIME type - accept any image/* type
-    const mimetype = file.mimetype && file.mimetype.startsWith('image/');
-    
-    console.log(`Extension valid: ${extname} (${ext})`);
-    console.log(`MIME type valid: ${mimetype}`);
-    console.log(`========================================\n`);
-    
-    if (extname && mimetype) {
-      console.log(`✅ File validation passed!`);
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
+  fileFilter: fileValidation,
 });
 
 // Middleware to verify JWT token
@@ -161,7 +173,7 @@ router.post('/register', verifyJWT, async (req, res) => {
 });
 
 // Upload restaurant image to Cloudinary (without creating restaurant)
-router.post('/upload', verifyJWT, upload.single('image'), async (req, res) => {
+router.post('/upload', verifyJWT, uploadCloudinary.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
