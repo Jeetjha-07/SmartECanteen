@@ -326,19 +326,22 @@ class _CheckoutWithRazorpayExampleState
                         color: AppColors.primaryOrange, size: 24),
                   ),
                   const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Razorpay Payment',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Credit Card, Debit Card, UPI, Wallet',
-                        style:
-                            TextStyle(fontSize: 12, color: AppColors.textGrey),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Razorpay Payment',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Credit Card, Debit Card, UPI, Wallet',
+                          style: TextStyle(fontSize: 12, color: AppColors.textGrey),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

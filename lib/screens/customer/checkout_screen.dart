@@ -107,11 +107,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
         // Step 3: Open payment gateway with callbacks
         await PaymentService.openCheckout(
+          orderId: orderId,
           razorpayOrderId: orderResponse['razorpayOrderId'],
           amount: totalWithDiscount,
           customerName: currentUser.name,
           customerEmail: currentUser.email,
           customerPhone: _phoneController.text.trim(),
+          totalAmount: totalWithDiscount,
+          restaurantId: widget.restaurant!.restaurantId,
+          customerId: currentUser.uid,
           description: 'SmartCanteen Order',
           key: orderResponse['key'],
           onPaymentSuccess: (verifyResult) async {
@@ -565,12 +569,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       child: Column(
                         children: [
                           RadioListTile<String>(
-                            title: const Row(
+                            title: Row(
                               children: [
-                                Icon(Icons.money,
+                                const Icon(Icons.money,
                                     color: AppColors.successGreen),
-                                SizedBox(width: 8),
-                                Text('Cash on Delivery'),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Cash on Delivery',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ],
                             ),
                             value: 'COD',
@@ -581,12 +590,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           const Divider(height: 1, indent: 16, endIndent: 16),
                           RadioListTile<String>(
-                            title: const Row(
+                            title: Row(
                               children: [
-                                Icon(Icons.payment,
+                                const Icon(Icons.payment,
                                     color: AppColors.primaryOrange),
-                                SizedBox(width: 8),
-                                Text('Razorpay (Cards, UPI, Wallets)'),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Razorpay (Cards, UPI, Wallets)',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ],
                             ),
                             value: 'Card',

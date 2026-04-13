@@ -237,46 +237,29 @@ class RestaurantService extends ChangeNotifier {
 
       // Step 1: Upload image to Cloudinary
       String cloudinaryUrl = await _uploadImageToCloudinary(imageFile);
+      print('✅ Got Cloudinary URL: $cloudinaryUrl');
 
-      // Step 2: Create request to register endpoint
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiService.baseUrl}/restaurants/register'),
-      );
+      // Step 2: Send JSON registration data to backend
+      final registrationData = {
+        'restaurantName': shopName,
+        'description': description,
+        'imageUrl': cloudinaryUrl, // Cloudinary URL from Step 1
+        'cuisineTypes': 'Multi-Cuisine',
+        'address': 'To be updated',
+        'phone': 'To be updated',
+        'city': 'Bangalore',
+        'zipCode': '560000',
+        'deliveryTime': 30,
+        'deliveryCharge': 50,
+        'minOrderValue': 100,
+        'defaultTimeSlotCapacity': 20,
+        'isVerified': true,
+        'isOpen': true,
+      };
 
       print('🔗 API Endpoint: ${ApiService.baseUrl}/restaurants/register');
-
-      // Add headers (including Authorization)
-      final headers = ApiService.getHeaders();
-      request.headers.addAll(headers);
-
-      print('📋 Request Headers:');
-      headers.forEach((key, value) {
-        if (key == 'Authorization') {
-          print('   $key: Bearer [REDACTED]');
-        } else {
-          print('   $key: $value');
-        }
-      });
-
-      // Add form fields
-      request.fields['restaurantName'] = shopName;
-      request.fields['description'] = description;
-      request.fields['imageUrl'] = cloudinaryUrl; // Add Cloudinary URL
-      request.fields['cuisineTypes'] = 'Multi-Cuisine';
-      request.fields['address'] = 'To be updated';
-      request.fields['phone'] = 'To be updated';
-      request.fields['city'] = 'Bangalore';
-      request.fields['zipCode'] = '560000';
-      request.fields['deliveryTime'] = '30';
-      request.fields['deliveryCharge'] = '50';
-      request.fields['minOrderValue'] = '100';
-      request.fields['defaultTimeSlotCapacity'] = '20';
-      request.fields['isVerified'] = 'true';
-      request.fields['isOpen'] = 'true';
-
-      print('📝 Form Fields:');
-      request.fields.forEach((key, value) {
+      print('📋 Registration Data:');
+      registrationData.forEach((key, value) {
         if (key == 'imageUrl') {
           print('   $key: $value (Cloudinary)');
         } else {
@@ -284,36 +267,28 @@ class RestaurantService extends ChangeNotifier {
         }
       });
 
-      // Send request
+      // Step 3: Send JSON POST request
       print('⏳ Sending registration request...');
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
+      final headers = ApiService.getHeaders();
+
+      final response = await http
+          .post(
+            Uri.parse('${ApiService.baseUrl}/restaurants/register'),
+            headers: headers,
+            body: jsonEncode(registrationData),
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('Response status: ${response.statusCode}');
-      print('Response content-type: ${response.headers['content-type']}');
-      print('Response body length: ${responseBody.length}');
-
-      // Check if response is HTML (error page) instead of JSON
-      if (responseBody.trim().startsWith('<')) {
-        print('❌ ERROR: Server returned HTML instead of JSON');
-        print('Response preview: ${responseBody.substring(0, 200)}...');
-        return {
-          'success': false,
-          'error':
-              'Server error: Invalid response format. Check console logs for details.'
-        };
-      }
-
-      print('Response body: $responseBody');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         try {
-          final data = jsonDecode(responseBody);
+          final data = jsonDecode(response.body);
           print('✅ Shop registered successfully');
           return {'success': true, 'restaurant': data['restaurant']};
         } catch (e) {
           print('❌ JSON Parse Error: $e');
-          print('Response was: $responseBody');
           return {
             'success': false,
             'error': 'Invalid response format from server: $e'
@@ -321,7 +296,7 @@ class RestaurantService extends ChangeNotifier {
         }
       } else {
         try {
-          final error = jsonDecode(responseBody);
+          final error = jsonDecode(response.body);
           print('❌ Error: ${error['error']}');
           return {
             'success': false,
@@ -332,7 +307,7 @@ class RestaurantService extends ChangeNotifier {
           return {
             'success': false,
             'error':
-                'Server error (Status ${response.statusCode}): ${responseBody.substring(0, 100)}'
+                'Server error (Status ${response.statusCode}): ${response.body.substring(0, 100)}'
           };
         }
       }
