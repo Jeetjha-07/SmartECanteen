@@ -508,9 +508,22 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
   final _maxUsesController = TextEditingController();
 
   String _discountType = 'percentage';
-  DateTime _validFrom = DateTime.now();
-  DateTime _validUntil = DateTime.now().add(const Duration(days: 30));
+  late DateTime _validFrom;
+  late DateTime _validUntil;
   bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize dates to UTC to avoid timezone issues
+    // Set validFrom to today at 00:00 UTC
+    final now = DateTime.now().toUtc();
+    _validFrom = DateTime.utc(now.year, now.month, now.day);
+    // Set validUntil to 30 days from now at 23:59:59 UTC
+    final futureDate = now.add(const Duration(days: 30));
+    _validUntil = DateTime.utc(
+        futureDate.year, futureDate.month, futureDate.day, 23, 59, 59);
+  }
 
   @override
   void dispose() {
@@ -771,10 +784,13 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                             context: context,
                             initialDate: _validFrom,
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                           );
                           if (picked != null) {
-                            setState(() => _validFrom = picked);
+                            // Convert picked date to UTC at 00:00:00
+                            setState(() => _validFrom = DateTime.utc(
+                                picked.year, picked.month, picked.day));
                           }
                         },
                         child: InputDecorator(
@@ -801,10 +817,18 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                             context: context,
                             initialDate: _validUntil,
                             firstDate: _validFrom,
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                           );
                           if (picked != null) {
-                            setState(() => _validUntil = picked);
+                            // Convert picked date to UTC at 23:59:59 (end of day)
+                            setState(() => _validUntil = DateTime.utc(
+                                picked.year,
+                                picked.month,
+                                picked.day,
+                                23,
+                                59,
+                                59));
                           }
                         },
                         child: InputDecorator(
@@ -1092,10 +1116,13 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                           context: context,
                           initialDate: _validFrom,
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
-                          setState(() => _validFrom = picked);
+                          // Convert picked date to UTC at 00:00:00
+                          setState(() => _validFrom = DateTime.utc(
+                              picked.year, picked.month, picked.day));
                         }
                       },
                       child: InputDecorator(
@@ -1122,10 +1149,13 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                           context: context,
                           initialDate: _validUntil,
                           firstDate: _validFrom,
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
-                          setState(() => _validUntil = picked);
+                          // Convert picked date to UTC at 23:59:59 (end of day)
+                          setState(() => _validUntil = DateTime.utc(picked.year,
+                              picked.month, picked.day, 23, 59, 59));
                         }
                       },
                       child: InputDecorator(

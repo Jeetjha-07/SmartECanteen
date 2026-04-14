@@ -145,9 +145,27 @@ router.post('/validate', async (req, res) => {
     }
 
     const now = new Date();
-    if (now < coupon.validFrom || now > coupon.validUntil) {
+    console.log('⏰ Time validation:');
+    console.log('   Current time: ' + now.toISOString());
+    console.log('   validFrom: ' + coupon.validFrom.toISOString());
+    console.log('   validUntil: ' + coupon.validUntil.toISOString());
+    console.log('   Valid? ' + (now >= coupon.validFrom && now <= coupon.validUntil));
+
+    // Allow coupon from validFrom (inclusive) until end of validUntil day
+    const endOfValidUntilDay = new Date(coupon.validUntil);
+    endOfValidUntilDay.setHours(23, 59, 59, 999);
+
+    if (now < coupon.validFrom) {
+      console.log('❌ Coupon not yet valid (validFrom is in the future)');
       return res.status(400).json({
-        error: 'Coupon has expired or is not yet valid',
+        error: 'This coupon is not yet valid. It starts on ' + coupon.validFrom.toDateString(),
+      });
+    }
+
+    if (now > endOfValidUntilDay) {
+      console.log('❌ Coupon has expired');
+      return res.status(400).json({
+        error: 'This coupon has expired. It ended on ' + coupon.validUntil.toDateString(),
       });
     }
 

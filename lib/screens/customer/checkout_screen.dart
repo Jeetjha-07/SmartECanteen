@@ -685,12 +685,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final cartService = context.read<CartService>();
       final couponService = context.read<CouponService>();
+      final currentUser = AuthService.currentUser;
 
-      // Call actual API validation with restaurant ID
+      // Call actual API validation with restaurant ID and user ID
       final result = await couponService.validateCoupon(
         code: code,
         restaurantId: widget.restaurant!.restaurantId,
         orderAmount: cartService.totalPrice,
+        customerId: currentUser?.uid,
       );
 
       if (result != null && result['valid'] == true) {

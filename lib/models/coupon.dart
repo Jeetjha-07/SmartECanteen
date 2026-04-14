@@ -54,7 +54,9 @@ class Coupon {
 
   bool get isValid {
     final now = DateTime.now();
-    return isActive && now.isAfter(validFrom) && now.isBefore(validUntil);
+    // Include entire validUntil day (until end of day)
+    final endOfDay = validUntil.add(const Duration(days: 1));
+    return isActive && now.isAfter(validFrom) && now.isBefore(endOfDay);
   }
 
   bool get isExpired {

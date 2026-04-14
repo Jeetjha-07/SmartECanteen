@@ -98,20 +98,26 @@ class CouponService extends ChangeNotifier {
     required String code,
     required String restaurantId,
     required double orderAmount,
+    String? customerId,
   }) async {
     try {
+      print(
+          '🔍 Validating coupon: code=$code, restaurantId=$restaurantId, customerId=$customerId, orderAmount=$orderAmount');
+
       final response = await _apiService.post(
         '${ApiService.baseUrl}/coupons/validate',
         body: {
           'code': code,
           'restaurantId': restaurantId,
           'orderAmount': orderAmount,
+          if (customerId != null) 'customerId': customerId,
         },
       );
 
       if (response != null) {
         final data = response is String ? jsonDecode(response) : response;
         selectedCoupon = Coupon.fromJson(data['coupon']);
+        print('✅ Coupon validated successfully');
         return {
           'valid': true,
           'discount': data['discount'],
@@ -121,11 +127,30 @@ class CouponService extends ChangeNotifier {
       }
       return null;
     } catch (e) {
-      error = e.toString();
-      print('Error validating coupon: $e');
+      // Extract the actual error message from the detailed error
+      String errorMessage = e.toString();
+
+      // Try to extract the backend error message from the error string
+      if (errorMessage.contains('NOT FOUND (404)')) {
+        errorMessage =
+            'Coupon not found. Please check the code and restaurant.';
+      } else if (errorMessage.contains('Details:')) {
+        try {
+          final detailsStart = errorMessage.indexOf('Details: ') + 9;
+          final detailsEnd = errorMessage.length;
+          final details = errorMessage.substring(detailsStart, detailsEnd);
+          final detailsJson = jsonDecode(details);
+          errorMessage = detailsJson['error'] ?? errorMessage;
+        } catch (e) {
+          // If parsing fails, use the original error
+        }
+      }
+
+      error = errorMessage;
+      print('❌ Error validating coupon: $errorMessage');
       return {
         'valid': false,
-        'error': e.toString(),
+        'error': errorMessage,
       };
     }
   }
