@@ -594,9 +594,10 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
             child: Column(
@@ -689,7 +690,7 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       flex: 1,
                       child: TextFormField(
@@ -738,7 +739,7 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                             : null),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: TextFormField(
                         controller: _maxDiscountController,
@@ -809,7 +810,7 @@ class _CreateCouponDialogState extends State<_CreateCouponDialog> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: GestureDetector(
                         onTap: () async {
@@ -996,9 +997,10 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1070,7 +1072,7 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                       keyboardType: TextInputType.number,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: TextFormField(
                       controller: _maxDiscountController,
@@ -1141,7 +1143,7 @@ class _EditCouponDialogState extends State<_EditCouponDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
