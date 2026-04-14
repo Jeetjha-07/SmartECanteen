@@ -89,6 +89,31 @@ router.post('/', verifyJWT, async (req, res) => {
         console.log(`   📊 Updated time slot ${timeSlotId}: ${timeSlot.currentOrders}/${timeSlot.capacity} orders`);
       }
     }
+
+    // Update coupon usage tracking
+    if (couponCode) {
+      try {
+        const Coupon = require('../models/Coupon');
+        const coupon = await Coupon.findOne({
+          code: couponCode.toUpperCase(),
+          restaurantId: restaurantId,
+        });
+
+        if (coupon) {
+          coupon.usedCount = (coupon.usedCount || 0) + 1;
+          coupon.usedBy.push({
+            userId: req.user.userId,
+            usedAt: new Date(),
+            orderId: order._id,
+          });
+          await coupon.save();
+          console.log(`   💰 Updated coupon ${couponCode}: ${coupon.usedCount}/${coupon.maxUses || '∞'} uses`);
+        }
+      } catch (couponError) {
+        console.warn('⚠️  Coupon usage update failed (order still created):', couponError.message);
+        // Don't fail order if coupon tracking fails
+      }
+    }
     
     console.log('✅ Order created successfully:', order._id);
     res.status(201).json({ success: true, order });

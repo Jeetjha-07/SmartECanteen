@@ -155,6 +155,19 @@ router.post('/validate', async (req, res) => {
       return res.status(400).json({ error: 'Coupon usage limit reached' });
     }
 
+    // Check per-user usage limit
+    if (req.body.customerId) {
+      const userUsageCount = (coupon.usedBy || []).filter(
+        u => u.userId === req.body.customerId
+      ).length;
+
+      if (userUsageCount >= coupon.usesPerUser) {
+        return res.status(400).json({
+          error: `You have already used this coupon the maximum number of times (limit: ${coupon.usesPerUser})`,
+        });
+      }
+    }
+
     if (orderAmount < coupon.minOrderValue) {
       return res.status(400).json({
         error: `Minimum order value of ₹${coupon.minOrderValue} required`,
