@@ -67,8 +67,11 @@ router.post('/create', verifyJWT, async (req, res) => {
       usesPerUser: usesPerUser || 1,
       validFrom: new Date(validFrom),
       validUntil: new Date(validUntil),
+      isActive: true, // Explicitly set to true when creating
+      usedCount: 0, // Initialize to 0
     });
 
+    console.log('✅ Creating coupon:', { code: coupon.code, restaurantId: coupon.restaurantId, isActive: coupon.isActive });
     await coupon.save();
 
     res.status(201).json({
@@ -76,6 +79,7 @@ router.post('/create', verifyJWT, async (req, res) => {
       coupon,
     });
   } catch (error) {
+    console.error('❌ Coupon creation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -111,19 +115,40 @@ router.post('/validate', async (req, res) => {
   try {
     const { code, restaurantId, orderAmount } = req.body;
 
+    // Debug logging
+    console.log('🔍 Validating coupon:', { code, restaurantId, orderAmount });
+
+    if (!code || !restaurantId) {
+      return res.status(400).json({
+        error: 'Missing required fields: code and restaurantId',
+      });
+    }
+
     const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
-      restaurantId,
-      isActive: true,
+      restaurantId: restaurantId,
     });
 
+    console.log('📋 Coupon found:', coupon);
+
     if (!coupon) {
-      return res.status(404).json({ error: 'Coupon not found or inactive' });
+      return res.status(404).json({
+        error: 'Coupon not found for this restaurant. Code or Restaurant ID may be incorrect.',
+      });
+    }
+
+    // Check if coupon is active
+    if (!coupon.isActive) {
+      return res.status(400).json({
+        error: 'This coupon has been deactivated by the restaurant',
+      });
     }
 
     const now = new Date();
     if (now < coupon.validFrom || now > coupon.validUntil) {
-      return res.status(400).json({ error: 'Coupon has expired or not yet valid' });
+      return res.status(400).json({
+        error: 'Coupon has expired or is not yet valid',
+      });
     }
 
     if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
@@ -153,6 +178,7 @@ router.post('/validate', async (req, res) => {
       finalAmount: orderAmount - discount,
     });
   } catch (error) {
+    console.error('❌ Coupon validation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -170,8 +196,32 @@ router.put('/:couponId', verifyJWT, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to update this coupon' });
     }
 
-    const updates = req.body;
+    // Only allow specific fields to be updated (prevent restaurantId tampering)
+    const allowedFields = [
+      'description',
+      'discountType',
+      'discountValue',
+      'minOrderValue',
+      'maxDiscount',
+      'maxUses',
+      'usesPerUser',
+      'validFrom',
+      'validUntil',
+      'isActive',
+    ];
+
+    const updates = {};
+    allowedFields.forEach((field) => {
+      if (req.body.hasOwnProperty(field)) {
+        updates[field] = req.body[field];
+      }
+    });
+
+    // Ensure restaurantId is never changed
+    updates.restaurantId = coupon.restaurantId;
+
     Object.assign(coupon, updates);
+    coupon.updatedAt = new Date();
     await coupon.save();
 
     res.json({
