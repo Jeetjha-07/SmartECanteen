@@ -121,7 +121,7 @@ class _RestaurantShopRegistrationScreenState
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryOrange.withOpacity(0.2),
+                          color: AppColors.primaryOrange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -154,7 +154,7 @@ class _RestaurantShopRegistrationScreenState
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryOrange.withOpacity(0.2),
+                          color: AppColors.primaryOrange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -196,7 +196,7 @@ class _RestaurantShopRegistrationScreenState
             Container(
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
-                color: AppColors.primaryOrange.withOpacity(0.1),
+                color: AppColors.primaryOrange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(

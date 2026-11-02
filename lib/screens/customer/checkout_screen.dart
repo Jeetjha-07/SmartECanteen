@@ -56,10 +56,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _placeOrder() async {
+    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedTimeSlot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      scaffoldMessenger?.showSnackBar(const SnackBar(
         content: Text('Please select a delivery time slot'),
         backgroundColor: AppColors.errorRed,
       ));
@@ -86,7 +88,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
         if (!orderResponse['success']) {
           setState(() => _isProcessing = false);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          scaffoldMessenger?.showSnackBar(SnackBar(
             content: Text(ErrorHandler.formatError(
                 'Failed to create payment order: ${orderResponse['error']}')),
             backgroundColor: AppColors.errorRed,
@@ -98,7 +100,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final currentUser = AuthService.currentUser;
         if (currentUser == null) {
           setState(() => _isProcessing = false);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          scaffoldMessenger?.showSnackBar(const SnackBar(
             content: Text('Please login to continue'),
             backgroundColor: AppColors.errorRed,
           ));
@@ -141,7 +143,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               cartService.clearCart();
               _showSuccessDialog();
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              scaffoldMessenger?.showSnackBar(SnackBar(
                 content: Text(ErrorHandler.formatError(
                     result['error'] ?? 'Failed to place order')),
                 backgroundColor: AppColors.errorRed,
@@ -151,7 +153,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           onPaymentError: (errorMsg) {
             if (!mounted) return;
             setState(() => _isProcessing = false);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            scaffoldMessenger?.showSnackBar(SnackBar(
               content:
                   Text(ErrorHandler.formatError('Payment failed: $errorMsg')),
               backgroundColor: AppColors.errorRed,
@@ -161,7 +163,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       } catch (e) {
         if (!mounted) return;
         setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        scaffoldMessenger?.showSnackBar(SnackBar(
           content: Text(ErrorHandler.formatError('Error: $e')),
           backgroundColor: AppColors.errorRed,
         ));
@@ -188,7 +190,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       cartService.clearCart();
       _showSuccessDialog();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      scaffoldMessenger?.showSnackBar(SnackBar(
         content: Text(ErrorHandler.formatError(
             result['error'] ?? 'Failed to place order')),
         backgroundColor: AppColors.errorRed,
@@ -210,7 +212,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: AppColors.successGreen.withOpacity(0.1),
+                color: AppColors.successGreen.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check_circle,
@@ -506,10 +508,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.successGreen.withOpacity(0.1),
+                          color: AppColors.successGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: AppColors.successGreen.withOpacity(0.3),
+                            color: AppColors.successGreen.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -540,7 +542,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryOrange.withOpacity(0.1),
+                          color: AppColors.primaryOrange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -566,50 +568,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
-                      child: Column(
-                        children: [
-                          RadioListTile<String>(
-                            title: Row(
-                              children: [
-                                const Icon(Icons.money,
-                                    color: AppColors.successGreen),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Cash on Delivery',
-                                    overflow: TextOverflow.ellipsis,
+                      child: RadioGroup<String>(
+                        groupValue: _paymentMethod,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _paymentMethod = value);
+                          }
+                        },
+                        child: Column(
+                          children: [
+                            RadioListTile<String>(
+                              title: Row(
+                                children: [
+                                  const Icon(Icons.money,
+                                      color: AppColors.successGreen),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Cash on Delivery',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              value: 'COD',
+                              activeColor: AppColors.primaryOrange,
                             ),
-                            value: 'COD',
-                            groupValue: _paymentMethod,
-                            activeColor: AppColors.primaryOrange,
-                            onChanged: (v) =>
-                                setState(() => _paymentMethod = v!),
-                          ),
-                          const Divider(height: 1, indent: 16, endIndent: 16),
-                          RadioListTile<String>(
-                            title: Row(
-                              children: [
-                                const Icon(Icons.payment,
-                                    color: AppColors.primaryOrange),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Razorpay (Cards, UPI, Wallets)',
-                                    overflow: TextOverflow.ellipsis,
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                            RadioListTile<String>(
+                              title: Row(
+                                children: [
+                                  const Icon(Icons.payment,
+                                      color: AppColors.primaryOrange),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Razorpay (Cards, UPI, Wallets)',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              value: 'Card',
+                              activeColor: AppColors.primaryOrange,
                             ),
-                            value: 'Card',
-                            groupValue: _paymentMethod,
-                            activeColor: AppColors.primaryOrange,
-                            onChanged: (v) =>
-                                setState(() => _paymentMethod = v!),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -624,7 +628,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.15),
+                    color: Colors.grey.withValues(alpha: 0.15),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),

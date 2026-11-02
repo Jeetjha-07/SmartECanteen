@@ -79,7 +79,7 @@ class _RestaurantCouponsScreenState extends State<RestaurantCouponsScreen> {
                       Container(
                         padding: const EdgeInsets.all(40),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryOrange.withOpacity(0.1),
+                          color: AppColors.primaryOrange.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -308,7 +308,7 @@ class _CouponCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.successGreen.withOpacity(0.1),
+                        color: AppColors.successGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(

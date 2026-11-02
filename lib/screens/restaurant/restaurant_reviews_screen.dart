@@ -150,7 +150,7 @@ class _RatingSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2))
         ],
@@ -245,7 +245,7 @@ class _ReviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.withOpacity(0.07),
+              color: Colors.grey.withValues(alpha: 0.07),
               blurRadius: 6,
               offset: const Offset(0, 2))
         ],

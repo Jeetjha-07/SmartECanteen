@@ -85,7 +85,7 @@ class _ActiveOrdersTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppColors.successGreen.withOpacity(0.1),
+                        color: AppColors.successGreen.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.check_circle_outline,
@@ -224,7 +224,7 @@ class _RestaurantOrderCardState extends State<_RestaurantOrderCard> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.07),
+              color: statusColor.withValues(alpha: 0.07),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -233,7 +233,7 @@ class _RestaurantOrderCardState extends State<_RestaurantOrderCard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.15),
+                    color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.receipt_long, color: statusColor, size: 20),
@@ -263,7 +263,7 @@ class _RestaurantOrderCardState extends State<_RestaurantOrderCard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.12),
+                        color: statusColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: statusColor),
                       ),

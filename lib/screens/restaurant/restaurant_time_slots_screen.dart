@@ -248,7 +248,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                                         horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: AppColors.primaryOrange
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -476,8 +476,8 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: isSlotOpen
-                              ? AppColors.successGreen.withOpacity(0.2)
-                              : AppColors.errorRed.withOpacity(0.2),
+                              ? AppColors.successGreen.withValues(alpha: 0.2)
+                              : AppColors.errorRed.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSlotOpen
@@ -531,7 +531,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.errorRed.withOpacity(0.2),
+                                color: AppColors.errorRed.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text(
@@ -572,8 +572,8 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSlotFull
-                    ? AppColors.errorRed.withOpacity(0.1)
-                    : AppColors.successGreen.withOpacity(0.1),
+                    ? AppColors.errorRed.withValues(alpha: 0.1)
+                    : AppColors.successGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -680,7 +680,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryOrange.withOpacity(0.1),
+                  color: AppColors.primaryOrange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -774,8 +774,8 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: closeSlots
-                    ? AppColors.errorRed.withOpacity(0.1)
-                    : AppColors.successGreen.withOpacity(0.1),
+                    ? AppColors.errorRed.withValues(alpha: 0.1)
+                    : AppColors.successGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -892,7 +892,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color, width: 1.5),
       ),
@@ -947,7 +947,7 @@ class _RestaurantTimeSlotsScreenState extends State<RestaurantTimeSlotsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.errorRed.withOpacity(0.1),
+                color: AppColors.errorRed.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(

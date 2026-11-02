@@ -185,7 +185,7 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                                 padding: const EdgeInsets.all(40),
                                 decoration: BoxDecoration(
                                   color:
-                                      AppColors.primaryOrange.withOpacity(0.1),
+                                      AppColors.primaryOrange.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -217,11 +217,11 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color:
-                                      AppColors.primaryOrange.withOpacity(0.05),
+                                      AppColors.primaryOrange.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: AppColors.primaryOrange
-                                        .withOpacity(0.2),
+                                        .withValues(alpha: 0.2),
                                   ),
                                 ),
                                 child: const Row(
@@ -434,18 +434,22 @@ class _ShopListingScreenState extends State<ShopListingScreen> {
             const Text('Sort By',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            ...sortOptions.map(
-              (option) => RadioListTile<String?>(
-                title: Text(option),
-                value: option == 'Default' ? null : option,
-                groupValue: _sortBy,
-                onChanged: (value) {
-                  setState(() {
-                    _sortBy = value;
-                  });
-                  _applyFilters();
-                  Navigator.pop(context);
-                },
+            RadioGroup<String?>(
+              groupValue: _sortBy,
+              onChanged: (value) {
+                setState(() {
+                  _sortBy = value;
+                });
+                _applyFilters();
+                Navigator.pop(context);
+              },
+              child: Column(
+                children: sortOptions.map(
+                  (option) => RadioListTile<String?>(
+                    title: Text(option),
+                    value: option == 'Default' ? null : option,
+                  ),
+                ).toList(),
               ),
             ),
           ],

@@ -317,7 +317,7 @@ class _KpiCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2))
         ],
@@ -329,7 +329,7 @@ class _KpiCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -361,7 +361,7 @@ class _QuickStats extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2))
         ],
@@ -443,7 +443,7 @@ class _SalesForecastCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2))
               ],
@@ -464,10 +464,10 @@ class _SalesForecastCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.orange.withOpacity(0.2)),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2))
             ],
@@ -480,7 +480,7 @@ class _SalesForecastCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryOrange.withOpacity(0.1),
+                      color: AppColors.primaryOrange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.trending_up,
@@ -524,7 +524,7 @@ class _SalesForecastCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryOrange.withOpacity(0.1),
+                              color: AppColors.primaryOrange.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text('~$sales orders',
@@ -564,7 +564,7 @@ class _RevenueForcastCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2))
               ],
@@ -585,10 +585,10 @@ class _RevenueForcastCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.2)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2))
             ],
@@ -601,7 +601,7 @@ class _RevenueForcastCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.successGreen.withOpacity(0.1),
+                      color: AppColors.successGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.attach_money,
@@ -645,7 +645,7 @@ class _RevenueForcastCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.successGreen.withOpacity(0.1),
+                              color: AppColors.successGreen.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text('₹${revenue.toString()}',
@@ -685,7 +685,7 @@ class _SalesBoostRecommendations extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2))
               ],
@@ -706,10 +706,10 @@ class _SalesBoostRecommendations extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.purple.withOpacity(0.2)),
+            border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2))
             ],
@@ -722,7 +722,7 @@ class _SalesBoostRecommendations extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.1),
+                      color: Colors.purple.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.lightbulb_outline,
@@ -777,9 +777,9 @@ class _SalesBoostRecommendations extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: iconColor.withOpacity(0.05),
+                          color: iconColor.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: iconColor.withOpacity(0.2)),
+                          border: Border.all(color: iconColor.withValues(alpha: 0.2)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,8 +809,8 @@ class _SalesBoostRecommendations extends StatelessWidget {
                                       horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: impact == 'High'
-                                        ? Colors.red.withOpacity(0.1)
-                                        : Colors.orange.withOpacity(0.1),
+                                        ? Colors.red.withValues(alpha: 0.1)
+                                        : Colors.orange.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(impact,
@@ -860,7 +860,7 @@ class _TopItemsCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2))
               ],
@@ -881,10 +881,10 @@ class _TopItemsCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.2)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2))
             ],
@@ -896,7 +896,7 @@ class _TopItemsCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppColors.successGreen.withOpacity(0.1),
+                      color: AppColors.successGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Icon(Icons.trending_up,
@@ -975,7 +975,7 @@ class _LowItemsCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2))
               ],
@@ -996,10 +996,10 @@ class _LowItemsCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.2)),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2))
             ],
@@ -1011,7 +1011,7 @@ class _LowItemsCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppColors.errorRed.withOpacity(0.1),
+                      color: AppColors.errorRed.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Icon(Icons.trending_down,

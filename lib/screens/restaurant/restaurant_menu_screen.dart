@@ -68,7 +68,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primaryOrange.withOpacity(0.2),
+                color: AppColors.primaryOrange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -227,7 +227,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
                                 padding: const EdgeInsets.all(30),
                                 decoration: BoxDecoration(
                                   color:
-                                      AppColors.primaryOrange.withOpacity(0.1),
+                                      AppColors.primaryOrange.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
