@@ -173,7 +173,7 @@ class PaymentService {
       print('   Order ID: $razorpayOrderId');
       print('   Amount: ₹${(amount).toStringAsFixed(2)}');
       print(
-          '   API Key: ${key.isNotEmpty ? key.substring(0, min(key.length, 15)) + '...' : 'NOT PROVIDED'}');
+          '   API Key: ${key.isNotEmpty ? '${key.substring(0, min(key.length, 15))}...' : 'NOT PROVIDED'}');
       print('═══════════════════════════════════════════════════');
 
       // Validate key

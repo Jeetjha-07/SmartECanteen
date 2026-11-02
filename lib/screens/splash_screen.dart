@@ -116,7 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
                           borderRadius: BorderRadius.circular(35),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 25,
                               offset: const Offset(0, 10),
                             ),
@@ -137,7 +137,7 @@ class _SplashScreenState extends State<SplashScreen>
                     opacity: _fadeAnimation,
                     child: ScaleTransition(
                       scale: _scaleAnimation,
-                      child: Text(
+                      child: const Text(
                         'SmartECanteen',
                         style: TextStyle(
                           color: Colors.white,
@@ -156,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
                     offset: Offset(0, _slideAnimation.value),
                     child: FadeTransition(
                       opacity: _fadeAnimation,
-                      child: Text(
+                      child: const Text(
                         'Khana Mast Life Jabardast',
                         style: TextStyle(
                           color: Colors.white70,
